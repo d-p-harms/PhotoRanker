@@ -1,9 +1,3 @@
-//
-//  RankedPhoto.swift
-//  PhotoRater
-//
-//  Created by David Harms on 4/18/25.
-//
 import Foundation
 import UIKit
 
@@ -18,6 +12,7 @@ struct RankedPhoto: Identifiable {
     // Not persisted
     var localImage: UIImage?
     
+    // Initializer for creating from a local image (for testing/simulation)
     init(image: UIImage, score: Double, tags: [PhotoTag]?, analysis: PhotoAnalysis? = nil) {
         self.id = UUID()
         self.fileName = "photo_\(Date().timeIntervalSince1970).jpg"
@@ -28,13 +23,14 @@ struct RankedPhoto: Identifiable {
         self.localImage = image
     }
     
-    init(from response: FirebaseResponse) {
-        self.id = UUID()
-        self.fileName = response.fileName
-        self.storageURL = response.storageURL
-        self.score = response.score
-        self.tags = response.tags
-        self.analysis = response.analysis
+    // Main initializer for creating from Firebase response
+    init(id: UUID, fileName: String, storageURL: String?, score: Double, tags: [PhotoTag]?, analysis: PhotoAnalysis?) {
+        self.id = id
+        self.fileName = fileName
+        self.storageURL = storageURL
+        self.score = score
+        self.tags = tags
+        self.analysis = analysis
         self.localImage = nil
     }
 }
