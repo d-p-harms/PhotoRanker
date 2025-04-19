@@ -6,12 +6,5 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
-@main
-struct PhotoRaterApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
-}
