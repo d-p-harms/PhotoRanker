@@ -19,7 +19,7 @@ struct PhotoResultCard: View {
             photoImageView
             
             // Info section
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 // Score
                 Text("Score: \(Int(rankedPhoto.score))")
                     .font(.headline)
@@ -27,13 +27,14 @@ struct PhotoResultCard: View {
                 
                 // Tags
                 if let tags = rankedPhoto.tags, !tags.isEmpty {
-                    HStack {
+                    HStack(spacing: 6) {
                         ForEach(tags, id: \.self) { tag in
                             HStack(spacing: 4) {
                                 Text(tag.emoji)
-                                    .font(.system(size: 14))
+                                    .font(.system(size: 12))
                                 Text(tag.rawValue.capitalized)
                                     .font(.caption)
+                                    .fontWeight(.medium)
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -44,43 +45,48 @@ struct PhotoResultCard: View {
                     }
                 }
                 
-                // Truncated comment with expand/collapse
+                // Comment with proper truncation
                 if let reason = rankedPhoto.reason, !reason.isEmpty {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(isExpanded ? reason : truncatedReason(reason))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .lineLimit(isExpanded ? nil : 2)
+                            .lineLimit(isExpanded ? nil : 3)
+                            .fixedSize(horizontal: false, vertical: true)
                             .animation(.easeInOut(duration: 0.2), value: isExpanded)
                         
                         if shouldShowReadMore(reason) {
-                            Button(isExpanded ? "Show Less" : "Read More") {
-                                isExpanded.toggle()
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isExpanded.toggle()
+                                }
+                            }) {
+                                Text(isExpanded ? "Show Less" : "Read More")
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                                    .fontWeight(.medium)
                             }
-                            .font(.caption2)
-                            .foregroundColor(.blue)
                         }
                     }
-                    .padding(.top, 4)
                 } else {
                     Text("Analysis completed")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .padding(.top, 4)
                 }
             }
-            .padding()
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
         }
         .background(Color(.systemBackground))
         .cornerRadius(12)
-        .shadow(radius: 5)
+        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
         .onAppear {
             loadImageFromURL()
         }
     }
     
     private func truncatedReason(_ reason: String) -> String {
-        let maxLength = 80 // Adjust this to fit your UI
+        let maxLength = 100 // Increased from 80
         if reason.count <= maxLength {
             return reason
         }
@@ -92,7 +98,7 @@ struct PhotoResultCard: View {
     }
     
     private func shouldShowReadMore(_ reason: String) -> Bool {
-        return reason.count > 80 // Same threshold as truncation
+        return reason.count > 100 // Match truncation threshold
     }
     
     private var photoImageView: some View {
@@ -107,7 +113,7 @@ struct PhotoResultCard: View {
                     .scaledToFill()
             } else if isLoading {
                 ProgressView()
-                    .frame(height: 200)
+                    .frame(height: 180)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -118,7 +124,7 @@ struct PhotoResultCard: View {
                     )
             }
         }
-        .frame(height: 200)
+        .frame(height: 180) // Slightly reduced height to give more space for text
         .clipped()
         .cornerRadius(12)
     }
