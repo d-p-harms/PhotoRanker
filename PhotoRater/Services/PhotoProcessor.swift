@@ -75,44 +75,57 @@ class PhotoProcessor {
         
         functions.httpsCallable("analyzePhotos").call(data) { result, error in
             if let error = error {
+                print("Firebase Function Error: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
-            guard let resultData = result?.data as? [String: Any],
-                  let success = resultData["success"] as? Bool else {
+            guard let resultData = result?.data as? [String: Any] else {
+                print("Invalid response format - not a dictionary")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])))
                 return
             }
             
-            if !success {
+            print("Firebase Function Response: \(resultData)")
+            
+            guard let success = resultData["success"] as? Bool, success else {
+                print("Function returned success: false")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 3, userInfo: [NSLocalizedDescriptionKey: "Function returned failure"])))
                 return
             }
             
             guard let results = resultData["results"] as? [[String: Any]] else {
+                print("Missing results in response")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 4, userInfo: [NSLocalizedDescriptionKey: "Missing results in response"])))
                 return
             }
             
+            print("Processing \(results.count) photo results")
+            
             // Parse the results
             var rankedPhotos: [RankedPhoto] = []
 
-            for result in results {
+            for (index, result) in results.enumerated() {
+                print("Processing result \(index): \(result)")
+                
                 guard let fileName = result["fileName"] as? String,
                       let storageURL = result["storageURL"] as? String,
                       let score = result["score"] as? Double else {
+                    print("Missing required fields in result \(index)")
                     continue
                 }
                 
-                // Parse tags
-                let tags = (result["tags"] as? [String] ?? []).compactMap { tagString -> PhotoTag? in
-                    return PhotoTag(rawValue: tagString)
+                // Parse tags - handle both string array and individual tag parsing
+                var tags: [PhotoTag] = []
+                if let tagStrings = result["tags"] as? [String] {
+                    tags = tagStrings.compactMap { PhotoTag(rawValue: $0) }
                 }
-
-                // Parse reason
-                let reason = result["reason"] as? String ?? "No analysis provided"
-
+                
+                // Parse reason with better fallback
+                let reason = result["reason"] as? String ?? "Analysis completed successfully"
+                
+                print("Creating RankedPhoto - fileName: \(fileName), score: \(score), reason: \(reason)")
+                
                 let rankedPhoto = RankedPhoto(
                     id: UUID(),
                     fileName: fileName,
@@ -125,6 +138,7 @@ class PhotoProcessor {
                 rankedPhotos.append(rankedPhoto)
             }
             
+            print("Successfully created \(rankedPhotos.count) ranked photos")
             completion(.success(rankedPhotos))
         }
     }
