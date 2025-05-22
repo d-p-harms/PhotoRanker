@@ -114,24 +114,22 @@ struct ContentView: View {
                             .padding()
                     }
                     
-                    // Ranked photos
+                    // Ranked photos - Single column layout
                     if !rankedPhotos.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Your Top Photos")
                                 .font(.headline)
                                 .padding(.horizontal)
                             
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: 12),
-                                GridItem(.flexible(), spacing: 12)
-                            ], spacing: 16) {
+                            // Single column of photo cards
+                            VStack(spacing: 16) {
                                 ForEach(rankedPhotos) { photo in
                                     PhotoResultCard(rankedPhoto: photo)
+                                        .padding(.horizontal)
                                 }
                             }
-                            .padding(.horizontal)
                         }
-                        .padding(.bottom, 20) // Extra bottom padding
+                        .padding(.bottom, 20)
                     }
                 }
                 .padding(.bottom)
@@ -179,4 +177,3 @@ struct ContentView: View {
         }
     }
 }
-

@@ -1,10 +1,3 @@
-//
-//  PhotoResultCard.swift
-//  PhotoRater
-//
-//  Created by David Harms on 4/18/25.
-//
-
 import SwiftUI
 
 struct PhotoResultCard: View {
@@ -12,40 +5,81 @@ struct PhotoResultCard: View {
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
     @State private var isExpanded = false
+    @State private var showingDetailView = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Photo display
-            photoImageView
+            // Photo display with score overlay
+            ZStack(alignment: .topTrailing) {
+                photoImageView
+                
+                // Score badge
+                VStack(spacing: 2) {
+                    Text("\(Int(rankedPhoto.score))")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    Text("SCORE")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(scoreColor.opacity(0.9))
+                )
+                .padding(8)
+            }
             
             // Info section
-            VStack(alignment: .leading, spacing: 6) {
-                // Score
-                Text("Score: \(Int(rankedPhoto.score))")
-                    .font(.headline)
-                    .foregroundColor(.blue)
-                
-                // Tags
-                if let tags = rankedPhoto.tags, !tags.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(tags, id: \.self) { tag in
-                            HStack(spacing: 4) {
-                                Text(tag.emoji)
-                                    .font(.system(size: 12))
-                                Text(tag.rawValue.capitalized)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(6)
+            VStack(alignment: .leading, spacing: 8) {
+                // Detailed scores if available
+                if let scores = rankedPhoto.detailedScores {
+                    HStack(spacing: 8) {
+                        ScoreChip(title: "Visual", score: scores.visualQuality, color: .blue)
+                        ScoreChip(title: "Appeal", score: scores.attractiveness, color: .pink)
+                        ScoreChip(title: "Swipe", score: scores.swipeWorthiness, color: .green)
+                        
+                        Spacer()
+                        
+                        Button("Details") {
+                            showingDetailView = true
                         }
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(4)
                     }
                 }
                 
-                // Comment with proper truncation
+                // Tags
+                if let tags = rankedPhoto.tags, !tags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(tags, id: \.self) { tag in
+                                HStack(spacing: 4) {
+                                    Text(tag.emoji)
+                                        .font(.system(size: 12))
+                                    Text(tag.rawValue.capitalized)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundColor(.blue)
+                                .cornerRadius(6)
+                            }
+                        }
+                        .padding(.horizontal, 1)
+                    }
+                }
+                
+                // Main comment with truncation
                 if let reason = rankedPhoto.reason, !reason.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(isExpanded ? reason : truncatedReason(reason))
@@ -53,13 +87,10 @@ struct PhotoResultCard: View {
                             .foregroundColor(.secondary)
                             .lineLimit(isExpanded ? nil : 3)
                             .fixedSize(horizontal: false, vertical: true)
-                            .animation(.easeInOut(duration: 0.2), value: isExpanded)
                         
                         if shouldShowReadMore(reason) {
                             Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    isExpanded.toggle()
-                                }
+                                isExpanded.toggle()
                             }) {
                                 Text(isExpanded ? "Show Less" : "Read More")
                                     .font(.caption2)
@@ -83,10 +114,22 @@ struct PhotoResultCard: View {
         .onAppear {
             loadImageFromURL()
         }
+        .sheet(isPresented: $showingDetailView) {
+            PhotoDetailView(rankedPhoto: rankedPhoto)
+        }
+    }
+    
+    private var scoreColor: Color {
+        switch rankedPhoto.score {
+        case 80...100: return .green
+        case 60...79: return .blue
+        case 40...59: return .orange
+        default: return .red
+        }
     }
     
     private func truncatedReason(_ reason: String) -> String {
-        let maxLength = 100 // Increased from 80
+        let maxLength = 100
         if reason.count <= maxLength {
             return reason
         }
@@ -98,7 +141,7 @@ struct PhotoResultCard: View {
     }
     
     private func shouldShowReadMore(_ reason: String) -> Bool {
-        return reason.count > 100 // Match truncation threshold
+        return reason.count > 100
     }
     
     private var photoImageView: some View {
@@ -124,7 +167,7 @@ struct PhotoResultCard: View {
                     )
             }
         }
-        .frame(height: 180) // Slightly reduced height to give more space for text
+        .frame(height: 180)
         .clipped()
         .cornerRadius(12)
     }
@@ -157,5 +200,27 @@ struct PhotoResultCard: View {
                 }
             }
         }.resume()
+    }
+}
+
+struct ScoreChip: View {
+    let title: String
+    let score: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 1) {
+            Text("\(Int(score))")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .background(color.opacity(0.1))
+        .cornerRadius(6)
     }
 }

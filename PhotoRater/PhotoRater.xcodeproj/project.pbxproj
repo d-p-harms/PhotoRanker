@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */; };
+		AB496BE82DDEF2B100B87CA6 /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */; };
 		AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */; };
 		AB65586C2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
@@ -71,6 +72,7 @@
 
 /* Begin PBXFileReference section */
 		AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseResponse.swift; sourceTree = "<group>"; };
+		AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
 		AB65586B2DB388D100113CFF /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB80327D2DB18F4A0005A7DC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 		AB8032BE2DB33CE70005A7DC /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */,
 				AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */,
 				AB8032C12DB33D170005A7DC /* CriteriaButton.swift */,
 				AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */,
@@ -437,6 +440,7 @@
 				AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */,
 				AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */,
 				AB8032B82DB33C190005A7DC /* PhotoRanker.swift in Sources */,
+				AB496BE82DDEF2B100B87CA6 /* PhotoDetailView.swift in Sources */,
 				AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
