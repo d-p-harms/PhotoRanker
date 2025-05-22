@@ -28,23 +28,27 @@ struct PhotoResultCard: View {
                 if let tags = rankedPhoto.tags, !tags.isEmpty {
                     HStack {
                         ForEach(tags, id: \.self) { tag in
-                            Text(tag.emoji)
-                                .font(.system(size: 16))
-                                .padding(4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(6)
+                            HStack(spacing: 4) {
+                                Text(tag.emoji)
+                                    .font(.system(size: 14))
+                                Text(tag.rawValue.capitalized)
+                                    .font(.caption)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .cornerRadius(6)
                         }
                     }
                 }
                 
                 // Reason from analysis
-                if let reason = rankedPhoto.reason {
-                    Text(reason)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .padding(.top, 4)
-                }
+                Text(rankedPhoto.reason ?? "No reason provided")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(3)
+                    .padding(.top, 4)
             }
             .padding()
         }
