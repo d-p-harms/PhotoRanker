@@ -117,10 +117,23 @@ class PhotoProcessor {
                     return PhotoTag(rawValue: tagString)
                 }
                 
-                // Get reason - handle both 'reason' and 'bestQuality' fields
-                let reason = (result["reason"] as? String) ??
-                           (result["bestQuality"] as? String) ??
-                           "Analysis completed"
+                // Get reason - combine compliment with actionable suggestion
+                var reason = "Analysis completed"
+                
+                if let bestQuality = result["bestQuality"] as? String {
+                    // Start with the compliment
+                    reason = bestQuality
+                    
+                    // Add actionable suggestion if available
+                    if let suggestions = result["suggestions"] as? [String], !suggestions.isEmpty {
+                        let suggestion = suggestions[0] // Use first suggestion
+                        reason = "\(bestQuality) Tip: \(suggestion)"
+                    }
+                } else if let directReason = result["reason"] as? String {
+                    reason = directReason
+                } else if let comment = result["comment"] as? String {
+                    reason = comment
+                }
                 
                 print("Creating RankedPhoto: fileName=\(fileName), score=\(score), reason=\(reason), tags=\(tags)")
                 
