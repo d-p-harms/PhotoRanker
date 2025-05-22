@@ -7,17 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */; };
 		AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */; };
 		AB65586C2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586E2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
-		AB6558702DB43F2700113CFF /* PhotoQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586F2DB43F2300113CFF /* PhotoQuality.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
 		AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A62DB191900005A7DC /* AppDelegate.swift */; };
 		AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */; };
 		AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AB2DB334660005A7DC /* RankedPhoto.swift */; };
 		AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AE2DB334850005A7DC /* PhotoTag.swift */; };
-		AB8032B32DB335520005A7DC /* PhotoAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032B12DB3354C0005A7DC /* PhotoAnalysis.swift */; };
 		AB8032B82DB33C190005A7DC /* PhotoRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032B72DB33C140005A7DC /* PhotoRanker.swift */; };
 		AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */; };
 		AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C12DB33D170005A7DC /* CriteriaButton.swift */; };
@@ -71,8 +70,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseResponse.swift; sourceTree = "<group>"; };
 		AB65586B2DB388D100113CFF /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
-		AB65586F2DB43F2300113CFF /* PhotoQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoQuality.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB80327D2DB18F4A0005A7DC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB8032882DB18F4C0005A7DC /* PhotoRaterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoRaterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -81,7 +80,6 @@
 		AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingCriteria.swift; sourceTree = "<group>"; };
 		AB8032AB2DB334660005A7DC /* RankedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankedPhoto.swift; sourceTree = "<group>"; };
 		AB8032AE2DB334850005A7DC /* PhotoTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTag.swift; sourceTree = "<group>"; };
-		AB8032B12DB3354C0005A7DC /* PhotoAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAnalysis.swift; sourceTree = "<group>"; };
 		AB8032B72DB33C140005A7DC /* PhotoRanker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRanker.swift; sourceTree = "<group>"; };
 		AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosPicker.swift; sourceTree = "<group>"; };
 		AB8032C12DB33D170005A7DC /* CriteriaButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriteriaButton.swift; sourceTree = "<group>"; };
@@ -211,11 +209,10 @@
 		AB8032BC2DB33C8A0005A7DC /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				AB65586F2DB43F2300113CFF /* PhotoQuality.swift */,
-				AB8032B12DB3354C0005A7DC /* PhotoAnalysis.swift */,
 				AB8032AE2DB334850005A7DC /* PhotoTag.swift */,
 				AB8032AB2DB334660005A7DC /* RankedPhoto.swift */,
 				AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */,
+				AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -434,19 +431,18 @@
 			files = (
 				AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
 				AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
-				AB6558702DB43F2700113CFF /* PhotoQuality.swift in Sources */,
 				AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */,
 				AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */,
 				AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */,
 				AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */,
 				AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */,
 				AB8032B82DB33C190005A7DC /* PhotoRanker.swift in Sources */,
+				AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
 				AB8033042DB346D40005A7DC /* PhotoRankerApp.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
-				AB8032B32DB335520005A7DC /* PhotoAnalysis.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

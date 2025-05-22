@@ -109,13 +109,17 @@ class PhotoProcessor {
                 let tags = (result["tags"] as? [String] ?? []).compactMap { tagString -> PhotoTag? in
                     return PhotoTag(rawValue: tagString)
                 }
-                
+
+                // Parse reason
+                let reason = result["reason"] as? String ?? "No analysis provided"
+
                 let rankedPhoto = RankedPhoto(
                     id: UUID(),
                     fileName: fileName,
                     storageURL: storageURL,
                     score: score,
                     tags: tags,
+                    reason: reason
                 )
                 
                 rankedPhotos.append(rankedPhoto)
