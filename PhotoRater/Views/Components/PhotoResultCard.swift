@@ -4,7 +4,6 @@ struct PhotoResultCard: View {
     let rankedPhoto: RankedPhoto
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
-    @State private var isExpanded = false
     @State private var showingDetailView = false
     
     var body: some View {
@@ -33,7 +32,7 @@ struct PhotoResultCard: View {
                 .padding(8)
             }
             
-            // Info section
+            // Info section - Complete box content
             VStack(alignment: .leading, spacing: 8) {
                 // Detailed scores if available
                 if let scores = rankedPhoto.detailedScores {
@@ -79,26 +78,12 @@ struct PhotoResultCard: View {
                     }
                 }
                 
-                // Main comment with truncation
+                // Main comment - Full text, no truncation
                 if let reason = rankedPhoto.reason, !reason.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(isExpanded ? reason : truncatedReason(reason))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(isExpanded ? nil : 3)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        if shouldShowReadMore(reason) {
-                            Button(action: {
-                                isExpanded.toggle()
-                            }) {
-                                Text(isExpanded ? "Show Less" : "Read More")
-                                    .font(.caption2)
-                                    .foregroundColor(.blue)
-                                    .fontWeight(.medium)
-                            }
-                        }
-                    }
+                    Text(reason)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text("Analysis completed")
                         .font(.caption)
@@ -126,22 +111,6 @@ struct PhotoResultCard: View {
         case 40...59: return .orange
         default: return .red
         }
-    }
-    
-    private func truncatedReason(_ reason: String) -> String {
-        let maxLength = 100
-        if reason.count <= maxLength {
-            return reason
-        }
-        let truncated = String(reason.prefix(maxLength))
-        if let lastSpace = truncated.lastIndex(of: " ") {
-            return String(truncated[..<lastSpace]) + "..."
-        }
-        return truncated + "..."
-    }
-    
-    private func shouldShowReadMore(_ reason: String) -> Bool {
-        return reason.count > 100
     }
     
     private var photoImageView: some View {
