@@ -16,7 +16,7 @@ class PhotoProcessor {
             switch uploadResult {
             case .success(let photoUrls):
                 // Then analyze them
-                self.analyzeWithGemini(photoUrls: photoUrls, criteria: criteria, completion: completion)
+                self.analyzeWithGemini(photoUrls: photoUrls, criteria: criteria, originalImages: images, completion: completion)
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -37,8 +37,8 @@ class PhotoProcessor {
                 continue
             }
             
-            let fileName = "photo_\(Int(Date().timeIntervalSince1970))_\(UUID().uuidString.prefix(8))_\(index).jpg"
-            let ref = storage.reference().child("uploads/\(fileName)")
+            let fileName = "uploads/photo_\(Int(Date().timeIntervalSince1970))_\(UUID().uuidString.prefix(8))_\(index).jpg"
+            let ref = storage.reference().child(fileName)
             
             ref.putData(data, metadata: nil) { metadata, error in
                 if let error = error {
@@ -67,7 +67,7 @@ class PhotoProcessor {
         }
     }
     
-    private func analyzeWithGemini(photoUrls: [String], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func analyzeWithGemini(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         let data: [String: Any] = [
             "photoUrls": photoUrls,
             "criteria": criteria.rawValue
@@ -75,56 +75,54 @@ class PhotoProcessor {
         
         functions.httpsCallable("analyzePhotos").call(data) { result, error in
             if let error = error {
-                print("Firebase Function Error: \(error.localizedDescription)")
+                print("Firebase function error: \(error)")
                 completion(.failure(error))
                 return
             }
             
             guard let resultData = result?.data as? [String: Any] else {
-                print("Invalid response format - not a dictionary")
+                print("Invalid response format: \(String(describing: result?.data))")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])))
                 return
             }
             
-            print("Firebase Function Response: \(resultData)")
-            
             guard let success = resultData["success"] as? Bool, success else {
-                print("Function returned success: false")
+                print("Function returned failure: \(resultData)")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 3, userInfo: [NSLocalizedDescriptionKey: "Function returned failure"])))
                 return
             }
             
             guard let results = resultData["results"] as? [[String: Any]] else {
-                print("Missing results in response")
+                print("Missing results in response: \(resultData)")
                 completion(.failure(NSError(domain: "PhotoProcessor", code: 4, userInfo: [NSLocalizedDescriptionKey: "Missing results in response"])))
                 return
             }
             
-            print("Processing \(results.count) photo results")
+            print("Received results: \(results)")
             
             // Parse the results
             var rankedPhotos: [RankedPhoto] = []
-
+            
             for (index, result) in results.enumerated() {
-                print("Processing result \(index): \(result)")
-                
                 guard let fileName = result["fileName"] as? String,
                       let storageURL = result["storageURL"] as? String,
                       let score = result["score"] as? Double else {
-                    print("Missing required fields in result \(index)")
+                    print("Missing required fields in result: \(result)")
                     continue
                 }
                 
-                // Parse tags - handle both string array and individual tag parsing
-                var tags: [PhotoTag] = []
-                if let tagStrings = result["tags"] as? [String] {
-                    tags = tagStrings.compactMap { PhotoTag(rawValue: $0) }
+                // Parse tags - convert strings to PhotoTag enum
+                let tagStrings = result["tags"] as? [String] ?? []
+                let tags = tagStrings.compactMap { tagString -> PhotoTag? in
+                    return PhotoTag(rawValue: tagString)
                 }
                 
-                // Parse reason with better fallback
-                let reason = result["reason"] as? String ?? "Analysis completed successfully"
+                // Get reason - handle both 'reason' and 'bestQuality' fields
+                let reason = (result["reason"] as? String) ??
+                           (result["bestQuality"] as? String) ??
+                           "Analysis completed"
                 
-                print("Creating RankedPhoto - fileName: \(fileName), score: \(score), reason: \(reason)")
+                print("Creating RankedPhoto: fileName=\(fileName), score=\(score), reason=\(reason), tags=\(tags)")
                 
                 let rankedPhoto = RankedPhoto(
                     id: UUID(),
@@ -138,7 +136,7 @@ class PhotoProcessor {
                 rankedPhotos.append(rankedPhoto)
             }
             
-            print("Successfully created \(rankedPhotos.count) ranked photos")
+            print("Created \(rankedPhotos.count) ranked photos")
             completion(.success(rankedPhotos))
         }
     }

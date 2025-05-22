@@ -11,6 +11,7 @@ struct PhotoResultCard: View {
     let rankedPhoto: RankedPhoto
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
+    @State private var isExpanded = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -43,12 +44,30 @@ struct PhotoResultCard: View {
                     }
                 }
                 
-                // Reason from analysis
-                Text(rankedPhoto.reason ?? "No reason provided")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
+                // Truncated comment with expand/collapse
+                if let reason = rankedPhoto.reason, !reason.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isExpanded ? reason : truncatedReason(reason))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(isExpanded ? nil : 2)
+                            .animation(.easeInOut(duration: 0.2), value: isExpanded)
+                        
+                        if shouldShowReadMore(reason) {
+                            Button(isExpanded ? "Show Less" : "Read More") {
+                                isExpanded.toggle()
+                            }
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                        }
+                    }
                     .padding(.top, 4)
+                } else {
+                    Text("Analysis completed")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
             }
             .padding()
         }
@@ -60,9 +79,29 @@ struct PhotoResultCard: View {
         }
     }
     
+    private func truncatedReason(_ reason: String) -> String {
+        let maxLength = 80 // Adjust this to fit your UI
+        if reason.count <= maxLength {
+            return reason
+        }
+        let truncated = String(reason.prefix(maxLength))
+        if let lastSpace = truncated.lastIndex(of: " ") {
+            return String(truncated[..<lastSpace]) + "..."
+        }
+        return truncated + "..."
+    }
+    
+    private func shouldShowReadMore(_ reason: String) -> Bool {
+        return reason.count > 80 // Same threshold as truncation
+    }
+    
     private var photoImageView: some View {
         Group {
-            if let image = loadedImage {
+            if let localImage = rankedPhoto.localImage {
+                Image(uiImage: localImage)
+                    .resizable()
+                    .scaledToFill()
+            } else if let image = loadedImage {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
@@ -85,6 +124,11 @@ struct PhotoResultCard: View {
     }
     
     private func loadImageFromURL() {
+        if rankedPhoto.localImage != nil {
+            isLoading = false
+            return
+        }
+        
         isLoading = true
         
         guard let urlString = rankedPhoto.storageURL,
