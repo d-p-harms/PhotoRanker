@@ -2,7 +2,7 @@
 //  PhotoDetailView.swift
 //  PhotoRater
 //
-//  Created by David Harms on 5/21/25.
+//  Updated to focus on qualitative feedback instead of numerical scores
 //
 
 import SwiftUI
@@ -19,12 +19,12 @@ struct PhotoDetailView: View {
                     // Photo
                     photoView
                     
-                    // Overall Score
-                    overallScoreSection
+                    // Overall Quality Assessment
+                    overallQualitySection
                     
-                    // Detailed Scores
+                    // Quality Breakdown - Visual indicators instead of numbers
                     if let scores = rankedPhoto.detailedScores {
-                        detailedScoresSection(scores)
+                        qualityBreakdownSection(scores)
                     }
                     
                     // Strengths
@@ -92,50 +92,48 @@ struct PhotoDetailView: View {
         .cornerRadius(12)
     }
     
-    private var overallScoreSection: some View {
+    private var overallQualitySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Overall Score")
+            Text("Overall Assessment")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             HStack {
-                Text("\(Int(rankedPhoto.score))")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(scoreColor)
+                QualityIndicator(score: rankedPhoto.score)
                 
-                Text("/100")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(getQualityDescription(rankedPhoto.score))
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(getQualityColor(rankedPhoto.score))
+                    
+                    Text(getDetailedQualityDescription(rankedPhoto.score))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
-                
-                ScoreProgressView(score: rankedPhoto.score)
             }
-            
-            Text(scoreDescription)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
     }
     
-    private func detailedScoresSection(_ scores: DetailedScores) -> some View {
+    private func qualityBreakdownSection(_ scores: DetailedScores) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Detailed Breakdown")
+            Text("Quality Breakdown")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             VStack(spacing: 8) {
-                ScoreRow(title: "Visual Quality", score: scores.visualQuality, icon: "camera.fill", color: .blue)
-                ScoreRow(title: "Attractiveness", score: scores.attractiveness, icon: "heart.fill", color: .pink)
-                ScoreRow(title: "Dating Appeal", score: scores.datingAppeal, icon: "person.2.fill", color: .purple)
-                ScoreRow(title: "Swipe Worthiness", score: scores.swipeWorthiness, icon: "hand.tap.fill", color: .green)
+                QualityRow(title: "Visual Quality", score: scores.visualQuality, icon: "camera.fill", color: .blue)
+                QualityRow(title: "Attractiveness", score: scores.attractiveness, icon: "heart.fill", color: .pink)
+                QualityRow(title: "Dating Appeal", score: scores.datingAppeal, icon: "person.2.fill", color: .purple)
+                QualityRow(title: "Profile Fit", score: scores.swipeWorthiness, icon: "hand.tap.fill", color: .green)
             }
             
-            Text("Your strongest area: \(scores.topCategory)")
+            Text("Strongest area: \(scores.topCategory)")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.blue)
@@ -314,21 +312,33 @@ struct PhotoDetailView: View {
         .cornerRadius(12)
     }
     
-    private var scoreColor: Color {
-        switch rankedPhoto.score {
+    // Helper functions for quality descriptions
+    private func getQualityDescription(_ score: Double) -> String {
+        switch score {
+        case 90...100: return "Excellent Photo"
+        case 80..<90: return "Great Photo"
+        case 70..<80: return "Good Photo"
+        case 60..<70: return "Fair Photo"
+        default: return "Needs Improvement"
+        }
+    }
+    
+    private func getDetailedQualityDescription(_ score: Double) -> String {
+        switch score {
+        case 90...100: return "Outstanding quality - perfect for your profile"
+        case 80..<90: return "High quality with strong dating appeal"
+        case 70..<80: return "Good quality with some room for improvement"
+        case 60..<70: return "Decent photo that could be enhanced"
+        default: return "Consider retaking or major improvements"
+        }
+    }
+    
+    private func getQualityColor(_ score: Double) -> Color {
+        switch score {
         case 80...100: return .green
         case 60...79: return .blue
         case 40...59: return .orange
         default: return .red
-        }
-    }
-    
-    private var scoreDescription: String {
-        switch rankedPhoto.score {
-        case 80...100: return "Excellent photo for dating profiles"
-        case 60...79: return "Good photo with room for improvement"
-        case 40...59: return "Average photo, could use enhancement"
-        default: return "Consider retaking or major improvements"
         }
     }
     
@@ -347,7 +357,48 @@ struct PhotoDetailView: View {
     }
 }
 
-struct ScoreRow: View {
+struct QualityIndicator: View {
+    let score: Double
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.gray.opacity(0.3), lineWidth: 8)
+                .frame(width: 60, height: 60)
+            
+            Circle()
+                .trim(from: 0, to: score / 100)
+                .stroke(getQualityColor(score), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                .frame(width: 60, height: 60)
+                .rotationEffect(.degrees(-90))
+            
+            Image(systemName: getQualityIcon(score))
+                .font(.title2)
+                .foregroundColor(getQualityColor(score))
+        }
+    }
+    
+    private func getQualityColor(_ score: Double) -> Color {
+        switch score {
+        case 80...100: return .green
+        case 60...79: return .blue
+        case 40...59: return .orange
+        default: return .red
+        }
+    }
+    
+    private func getQualityIcon(_ score: Double) -> String {
+        switch score {
+        case 90...100: return "star.fill"
+        case 80..<90: return "heart.fill"
+        case 70..<80: return "thumbsup.fill"
+        case 60..<70: return "hand.thumbsup"
+        default: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+struct QualityRow: View {
     let title: String
     let score: Double
     let icon: String
@@ -365,47 +416,38 @@ struct ScoreRow: View {
             
             Spacer()
             
-            Text("\(Int(score))")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(color)
-            
-            ScoreProgressView(score: score, height: 6, width: 60)
+            QualityStars(score: score)
         }
     }
 }
 
-struct ScoreProgressView: View {
+struct QualityStars: View {
     let score: Double
-    let height: CGFloat
-    let width: CGFloat
-    
-    init(score: Double, height: CGFloat = 8, width: CGFloat = 100) {
-        self.score = score
-        self.height = height
-        self.width = width
-    }
     
     var body: some View {
-        ZStack(alignment: .leading) {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: width, height: height)
-            
-            Rectangle()
-                .fill(scoreColor)
-                .frame(width: width * (score / 100), height: height)
+        HStack(spacing: 2) {
+            ForEach(0..<5) { index in
+                Image(systemName: starType(for: index))
+                    .foregroundColor(starColor(for: index))
+                    .font(.caption)
+            }
         }
-        .cornerRadius(height / 2)
     }
     
-    private var scoreColor: Color {
-        switch score {
-        case 80...100: return .green
-        case 60...79: return .blue
-        case 40...59: return .orange
-        default: return .red
+    private func starType(for index: Int) -> String {
+        let threshold = Double(index + 1) * 20
+        if score >= threshold {
+            return "star.fill"
+        } else if score >= threshold - 10 {
+            return "star.leadinghalf.filled"
+        } else {
+            return "star"
         }
+    }
+    
+    private func starColor(for index: Int) -> Color {
+        let threshold = Double(index + 1) * 20
+        return score >= threshold - 10 ? .yellow : .gray.opacity(0.4)
     }
 }
 

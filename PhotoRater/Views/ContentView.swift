@@ -187,8 +187,8 @@ struct ContentView: View {
                 }
             )
             .onAppear {
-                // Load user credits when view appears
-                pricingManager.loadUserCredits()
+                // Load user credits when view appears - use sync version
+                pricingManager.loadUserCreditsSync()
             }
         }
     }

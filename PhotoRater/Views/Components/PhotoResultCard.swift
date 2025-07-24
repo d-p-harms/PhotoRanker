@@ -8,17 +8,17 @@ struct PhotoResultCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Photo display with score overlay
+            // Photo display with quality indicator instead of score
             ZStack(alignment: .topTrailing) {
                 photoImageView
                 
-                // Score badge
+                // Quality badge instead of numerical score
                 VStack(spacing: 2) {
-                    Text("\(Int(rankedPhoto.score))")
+                    Image(systemName: qualityIcon)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
-                    Text("SCORE")
+                    Text(qualityLabel)
                         .font(.caption2)
                         .fontWeight(.medium)
                         .foregroundColor(.white.opacity(0.9))
@@ -27,32 +27,30 @@ struct PhotoResultCard: View {
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(scoreColor.opacity(0.9))
+                        .fill(qualityColor.opacity(0.9))
                 )
                 .padding(8)
             }
             
-            // Info section - Complete box content
+            // Info section - No numerical scores shown
             VStack(alignment: .leading, spacing: 8) {
-                // Detailed scores if available
-                if let scores = rankedPhoto.detailedScores {
-                    HStack(spacing: 8) {
-                        ScoreChip(title: "Visual", score: scores.visualQuality, color: .blue)
-                        ScoreChip(title: "Appeal", score: scores.attractiveness, color: .pink)
-                        ScoreChip(title: "Swipe", score: scores.swipeWorthiness, color: .green)
-                        
-                        Spacer()
-                        
-                        Button("Details") {
-                            showingDetailView = true
-                        }
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(4)
+                // Quality indicators instead of detailed scores
+                HStack(spacing: 8) {
+                    QualityChip(title: "Visual", quality: getQualityLevel(rankedPhoto.detailedScores?.visualQuality ?? rankedPhoto.score), color: .blue)
+                    QualityChip(title: "Appeal", quality: getQualityLevel(rankedPhoto.detailedScores?.attractiveness ?? rankedPhoto.score), color: .pink)
+                    QualityChip(title: "Profile Fit", quality: getQualityLevel(rankedPhoto.detailedScores?.swipeWorthiness ?? rankedPhoto.score), color: .green)
+                    
+                    Spacer()
+                    
+                    Button("Details") {
+                        showingDetailView = true
                     }
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(4)
                 }
                 
                 // Tags
@@ -104,12 +102,43 @@ struct PhotoResultCard: View {
         }
     }
     
-    private var scoreColor: Color {
+    // Convert numerical score to quality level
+    private func getQualityLevel(_ score: Double) -> QualityLevel {
+        switch score {
+        case 90...100: return .excellent
+        case 80..<90: return .great
+        case 70..<80: return .good
+        case 60..<70: return .fair
+        default: return .needsWork
+        }
+    }
+    
+    private var qualityColor: Color {
         switch rankedPhoto.score {
         case 80...100: return .green
         case 60...79: return .blue
         case 40...59: return .orange
         default: return .red
+        }
+    }
+    
+    private var qualityIcon: String {
+        switch rankedPhoto.score {
+        case 90...100: return "star.fill"
+        case 80..<90: return "heart.fill"
+        case 70..<80: return "thumbsup.fill"
+        case 60..<70: return "hand.thumbsup"
+        default: return "exclamationmark.triangle.fill"
+        }
+    }
+    
+    private var qualityLabel: String {
+        switch rankedPhoto.score {
+        case 90...100: return "EXCELLENT"
+        case 80..<90: return "GREAT"
+        case 70..<80: return "GOOD"
+        case 60..<70: return "FAIR"
+        default: return "IMPROVE"
         }
     }
     
@@ -172,17 +201,41 @@ struct PhotoResultCard: View {
     }
 }
 
-struct ScoreChip: View {
+enum QualityLevel {
+    case excellent, great, good, fair, needsWork
+    
+    var label: String {
+        switch self {
+        case .excellent: return "★★★"
+        case .great: return "★★☆"
+        case .good: return "★☆☆"
+        case .fair: return "△"
+        case .needsWork: return "○"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .excellent: return .green
+        case .great: return .blue
+        case .good: return .purple
+        case .fair: return .orange
+        case .needsWork: return .red
+        }
+    }
+}
+
+struct QualityChip: View {
     let title: String
-    let score: Double
+    let quality: QualityLevel
     let color: Color
     
     var body: some View {
         VStack(spacing: 1) {
-            Text("\(Int(score))")
+            Text(quality.label)
                 .font(.caption)
                 .fontWeight(.bold)
-                .foregroundColor(color)
+                .foregroundColor(quality.color)
             Text(title)
                 .font(.caption2)
                 .foregroundColor(.secondary)

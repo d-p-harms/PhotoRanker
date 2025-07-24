@@ -1,18 +1,23 @@
 // PricingManager.swift
-// Create new file: PhotoRater/Services/PricingManager.swift
+// Updated to use StoreKit 2 APIs to resolve deprecation warnings
 
 import Foundation
 import StoreKit
 import FirebaseAuth
 import FirebaseFirestore
 
-class PricingManager: NSObject, ObservableObject {
+// Import StoreKit's Transaction type specifically to avoid ambiguity
+import StoreKit
+
+@MainActor
+class PricingManager: ObservableObject {
     static let shared = PricingManager()
     
     @Published var userCredits: Int = 0
     @Published var isLoading = false
+    @Published var products: [Product] = []
     
-    private var products: [SKProduct] = []
+    private var updateListenerTask: Task<Void, Error>? = nil
     
     // Pricing tiers
     enum PricingTier {
@@ -80,14 +85,18 @@ class PricingManager: NSObject, ObservableObject {
         }
     }
     
-    private override init() {
-        super.init()
-        SKPaymentQueue.default().add(self)
-        loadProducts()
+    private init() {
+        // Start listening for transaction updates
+        updateListenerTask = listenForTransactions()
+        
+        Task {
+            await loadProducts()
+            await loadUserCredits()
+        }
     }
     
     deinit {
-        SKPaymentQueue.default().remove(self)
+        updateListenerTask?.cancel()
     }
     
     // MARK: - Public Methods
@@ -98,153 +107,198 @@ class PricingManager: NSObject, ObservableObject {
     
     func deductCredits(count: Int) {
         userCredits = max(0, userCredits - count)
-        saveCreditsToFirebase()
+        Task {
+            await saveCreditsToFirebase()
+        }
     }
     
     func addCredits(count: Int) {
         userCredits += count
-        saveCreditsToFirebase()
+        Task {
+            await saveCreditsToFirebase()
+        }
     }
     
     func initializeNewUser() {
         userCredits = PricingTier.free.credits // 3 free photos
-        saveCreditsToFirebase()
+        Task {
+            await saveCreditsToFirebase()
+        }
     }
     
-    func loadUserCredits() {
+    func loadUserCredits() async {
         guard let userId = Auth.auth().currentUser?.uid else {
             // If no user, wait for authentication then initialize
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.loadUserCredits()
-            }
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            await loadUserCredits()
             return
         }
         
         let db = Firestore.firestore()
-        db.collection("users").document(userId).getDocument { snapshot, error in
-            DispatchQueue.main.async {
-                if let data = snapshot?.data() {
+        
+        do {
+            let document = try await db.collection("users").document(userId).getDocument()
+            
+            await MainActor.run {
+                if let data = document.data() {
                     self.userCredits = data["credits"] as? Int ?? 3
                     print("Loaded user credits: \(self.userCredits)")
-                } else if error == nil {
+                } else {
                     // New user - initialize with free credits
                     print("New user detected, initializing with free credits")
                     self.initializeNewUser()
-                } else {
-                    print("Error loading credits: \(error?.localizedDescription ?? "Unknown error")")
-                    // Default to free credits on error
-                    self.userCredits = 3
                 }
+            }
+        } catch {
+            await MainActor.run {
+                print("Error loading credits: \(error.localizedDescription)")
+                // Default to free credits on error
+                self.userCredits = 3
             }
         }
     }
     
-    func purchaseProduct(_ productID: ProductID) {
-        guard let product = products.first(where: { $0.productIdentifier == productID.rawValue }) else {
+    // Add a non-async version for backwards compatibility
+    func loadUserCredits() {
+        Task {
+            await loadUserCredits()
+        }
+    }
+    
+    func purchaseProduct(_ productID: ProductID) async {
+        guard let product = products.first(where: { $0.id == productID.rawValue }) else {
             print("Product not found: \(productID.rawValue)")
             return
         }
         
-        let payment = SKPayment(product: product)
-        SKPaymentQueue.default().add(payment)
         isLoading = true
+        
+        do {
+            let result = try await product.purchase()
+            
+            switch result {
+            case .success(let verification):
+                let transaction = try checkVerified(verification)
+                
+                // Handle successful purchase
+                await handleSuccessfulPurchase(transaction, productID: productID)
+                
+                // Finish the transaction
+                await transaction.finish()
+                
+            case .userCancelled:
+                print("Purchase cancelled by user")
+                
+            case .pending:
+                print("Purchase pending (e.g., parental approval)")
+                
+            @unknown default:
+                print("Unknown purchase result")
+            }
+        } catch {
+            print("Purchase failed: \(error)")
+        }
+        
+        isLoading = false
     }
     
     // MARK: - Private Methods
     
-    private func loadProducts() {
-        let productIDs = Set(ProductID.allCases.map { $0.rawValue })
-        let request = SKProductsRequest(productIdentifiers: productIDs)
-        request.delegate = self
-        request.start()
+    private func loadProducts() async {
+        do {
+            let productIds = ProductID.allCases.map { $0.rawValue }
+            let loadedProducts = try await Product.products(for: productIds)
+            
+            self.products = loadedProducts.sorted { product1, product2 in
+                // Sort by price (starter first, then value)
+                return product1.price < product2.price
+            }
+            
+            print("Loaded \(self.products.count) products")
+            for product in self.products {
+                print("Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
+            }
+        } catch {
+            print("Failed to load products: \(error)")
+        }
     }
     
-    private func saveCreditsToFirebase() {
+    private func saveCreditsToFirebase() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()
-        db.collection("users").document(userId).setData([
-            "credits": userCredits,
-            "lastUpdated": FieldValue.serverTimestamp()
-        ], merge: true) { error in
-            if let error = error {
-                print("Error saving credits: \(error)")
-            } else {
-                print("Credits saved successfully: \(self.userCredits)")
-            }
-        }
-    }
-}
-
-// MARK: - SKProductsRequestDelegate
-extension PricingManager: SKProductsRequestDelegate {
-    func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
-        DispatchQueue.main.async {
-            self.products = response.products
-            print("Loaded \(self.products.count) products")
-            for product in self.products {
-                print("Product: \(product.productIdentifier) - \(product.localizedTitle) - \(product.price)")
-            }
-        }
-    }
-    
-    func request(_ request: SKRequest, didFailWithError error: Error) {
-        print("Product request failed: \(error)")
-    }
-}
-
-// MARK: - SKPaymentTransactionObserver
-extension PricingManager: SKPaymentTransactionObserver {
-    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
-        for transaction in transactions {
-            switch transaction.transactionState {
-            case .purchased:
-                handlePurchase(transaction)
-                SKPaymentQueue.default().finishTransaction(transaction)
-            case .failed:
-                handleFailedPurchase(transaction)
-                SKPaymentQueue.default().finishTransaction(transaction)
-            case .restored:
-                handleRestore(transaction)
-                SKPaymentQueue.default().finishTransaction(transaction)
-            case .deferred, .purchasing:
-                break
-            @unknown default:
-                break
-            }
-        }
-    }
-    
-    private func handlePurchase(_ transaction: SKPaymentTransaction) {
-        guard let productID = ProductID(rawValue: transaction.payment.productIdentifier) else {
-            print("Unknown product purchased: \(transaction.payment.productIdentifier)")
-            DispatchQueue.main.async {
-                self.isLoading = false
-            }
-            return
-        }
         
-        let creditsToAdd = productID.tier.credits
-        
-        DispatchQueue.main.async {
-            self.addCredits(count: creditsToAdd)
-            self.isLoading = false
-            print("Purchase successful: Added \(creditsToAdd) credits")
+        do {
+            try await db.collection("users").document(userId).setData([
+                "credits": userCredits,
+                "lastUpdated": FieldValue.serverTimestamp()
+            ], merge: true)
+            
+            print("Credits saved successfully: \(self.userCredits)")
+        } catch {
+            print("Error saving credits: \(error)")
         }
     }
     
-    private func handleFailedPurchase(_ transaction: SKPaymentTransaction) {
-        DispatchQueue.main.async {
-            self.isLoading = false
-            if let error = transaction.error as? SKError {
-                if error.code != .paymentCancelled {
-                    print("Purchase failed: \(error.localizedDescription)")
+    private func listenForTransactions() -> Task<Void, Error> {
+        return Task {
+            // Listen for transaction updates using StoreKit.Transaction
+            for await result in StoreKit.Transaction.updates {
+                do {
+                    let transaction = try checkVerified(result)
+                    
+                    // Handle the transaction
+                    if let productID = ProductID(rawValue: transaction.productID) {
+                        await handleSuccessfulPurchase(transaction, productID: productID)
+                    }
+                    
+                    // Finish the transaction
+                    await transaction.finish()
+                } catch {
+                    print("Transaction verification failed: \(error)")
                 }
             }
         }
     }
     
-    private func handleRestore(_ transaction: SKPaymentTransaction) {
-        handlePurchase(transaction)
+    private func handleSuccessfulPurchase(_ transaction: StoreKit.Transaction, productID: ProductID) async {
+        let creditsToAdd = productID.tier.credits
+        
+        await MainActor.run {
+            // Update credits directly here to avoid nested async calls
+            self.userCredits += creditsToAdd
+            print("Purchase successful: Added \(creditsToAdd) credits")
+        }
+        
+        // Save to Firebase separately
+        await saveCreditsToFirebase()
     }
+    
+    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+        // Check whether the JWS passes StoreKit verification
+        switch result {
+        case .unverified:
+            // StoreKit parses the JWS, but it fails verification
+            throw StoreKitError.failedVerification
+        case .verified(let safe):
+            // The result is verified. Return the unwrapped value
+            return safe
+        }
+    }
+    
+    // MARK: - Restore Purchases
+    
+    func restorePurchases() async {
+        do {
+            try await AppStore.sync()
+            print("Purchases restored successfully")
+        } catch {
+            print("Failed to restore purchases: \(error)")
+        }
+    }
+}
+
+// Custom StoreKit error for verification failures
+enum StoreKitError: Error {
+    case failedVerification
 }

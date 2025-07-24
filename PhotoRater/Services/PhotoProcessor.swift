@@ -1,4 +1,5 @@
 import UIKit
+import Foundation
 import Firebase
 import FirebaseStorage
 import FirebaseFunctions
@@ -191,7 +192,7 @@ class PhotoProcessor: ObservableObject {
             let ref = storage.reference().child(fileName)
             
             // Upload optimized image
-            ref.putData(optimizedData, metadata: nil) { metadata, error in
+            ref.putData(optimizedData, metadata: nil) { _, error in
                 if let error = error {
                     uploadError = error
                     dispatchGroup.leave()
@@ -209,7 +210,7 @@ class PhotoProcessor: ObservableObject {
             }
         }
         
-        dispatchGroup.notify(queue: .main) {
+        dispatchGroup.notify(queue: DispatchQueue.main) {
             if let error = uploadError {
                 completion(.failure(error))
             } else {
@@ -257,7 +258,7 @@ class PhotoProcessor: ObservableObject {
             // Parse the results into RankedPhoto objects with full data
             var rankedPhotos: [RankedPhoto] = []
             
-            for (index, result) in results.enumerated() {
+            for result in results {
                 guard let fileName = result["fileName"] as? String,
                       let storageURL = result["storageURL"] as? String,
                       let score = result["score"] as? Double else {

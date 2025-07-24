@@ -1,5 +1,5 @@
 // PricingView.swift
-// Create new file: PhotoRater/Views/PricingView.swift
+// Updated to work with StoreKit 2 APIs
 
 import SwiftUI
 import StoreKit
@@ -7,7 +7,7 @@ import StoreKit
 struct PricingView: View {
     @StateObject private var pricingManager = PricingManager.shared
     @Environment(\.presentationMode) var presentationMode
-    @State private var selectedTier: PricingManager.PricingTier = .starter
+    @State private var selectedProductID: PricingManager.ProductID = .starter
     
     var body: some View {
         NavigationView {
@@ -51,14 +51,31 @@ struct PricingView: View {
                         }
                     }
                     
-                    // Pricing tiers
+                    // Pricing tiers using actual StoreKit products
                     VStack(spacing: 16) {
-                        PricingTierCard(tier: .starter, isSelected: selectedTier == .starter) {
-                            selectedTier = .starter
+                        ForEach(pricingManager.products, id: \.id) { product in
+                            if let productID = PricingManager.ProductID(rawValue: product.id) {
+                                ProductCard(
+                                    product: product,
+                                    productID: productID,
+                                    isSelected: selectedProductID == productID,
+                                    showBadge: productID == .value
+                                ) {
+                                    selectedProductID = productID
+                                }
+                            }
                         }
                         
-                        PricingTierCard(tier: .value, isSelected: selectedTier == .value, showBadge: true) {
-                            selectedTier = .value
+                        // Show loading state if products haven't loaded yet
+                        if pricingManager.products.isEmpty {
+                            VStack {
+                                ProgressView()
+                                    .padding()
+                                Text("Loading pricing options...")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(height: 100)
                         }
                     }
                     .padding(.horizontal)
@@ -72,7 +89,7 @@ struct PricingView: View {
                                     .scaleEffect(0.8)
                             }
                             
-                            Text(pricingManager.isLoading ? "Processing..." : "Get \(selectedTier.title)")
+                            Text(pricingManager.isLoading ? "Processing..." : "Get \(selectedProductID.tier.title)")
                                 .fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
@@ -87,8 +104,17 @@ struct PricingView: View {
                         )
                         .cornerRadius(12)
                     }
-                    .disabled(pricingManager.isLoading)
+                    .disabled(pricingManager.isLoading || pricingManager.products.isEmpty)
                     .padding(.horizontal)
+                    
+                    // Restore purchases button
+                    Button("Restore Purchases") {
+                        Task {
+                            await pricingManager.restorePurchases()
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
                     
                     // Value demonstration
                     VStack(alignment: .leading, spacing: 12) {
@@ -98,7 +124,7 @@ struct PricingView: View {
                         
                         VStack(alignment: .leading, spacing: 8) {
                             FeatureRow(icon: "brain.head.profile", text: "AI analysis of photo quality, attractiveness & dating appeal")
-                            FeatureRow(icon: "chart.bar.fill", text: "Detailed scores: Visual Quality, Swipe Appeal & more")
+                            FeatureRow(icon: "chart.bar.fill", text: "Detailed quality breakdown with visual indicators")
                             FeatureRow(icon: "lightbulb.fill", text: "Technical feedback on lighting, composition & styling")
                             FeatureRow(icon: "person.2.fill", text: "Personality traits your photos project")
                             FeatureRow(icon: "target", text: "Specific improvement suggestions")
@@ -122,7 +148,7 @@ struct PricingView: View {
                         
                         Text("\"Helped me pick photos that actually got matches!\"")
                             .font(.caption)
-                            .fontStyle(.italic)
+                            .italic()
                             .foregroundColor(.secondary)
                     }
                     .padding()
@@ -155,27 +181,18 @@ struct PricingView: View {
     }
     
     private func purchaseSelected() {
-        guard let productID = PricingManager.ProductID.allCases.first(where: { $0.tier.title == selectedTier.title }) else {
-            print("Product ID not found for tier: \(selectedTier.title)")
-            return
+        Task {
+            await pricingManager.purchaseProduct(selectedProductID)
         }
-        
-        pricingManager.purchaseProduct(productID)
     }
 }
 
-struct PricingTierCard: View {
-    let tier: PricingManager.PricingTier
+struct ProductCard: View {
+    let product: Product
+    let productID: PricingManager.ProductID
     let isSelected: Bool
     let showBadge: Bool
     let action: () -> Void
-    
-    init(tier: PricingManager.PricingTier, isSelected: Bool, showBadge: Bool = false, action: @escaping () -> Void) {
-        self.tier = tier
-        self.isSelected = isSelected
-        self.showBadge = showBadge
-        self.action = action
-    }
     
     var body: some View {
         Button(action: action) {
@@ -183,7 +200,7 @@ struct PricingTierCard: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text(tier.title)
+                            Text(productID.tier.title)
                                 .font(.headline)
                                 .fontWeight(.semibold)
                             
@@ -198,7 +215,7 @@ struct PricingTierCard: View {
                                     .cornerRadius(4)
                             }
                             
-                            if let savings = tier.savings {
+                            if let savings = productID.tier.savings {
                                 Text(savings)
                                     .font(.caption2)
                                     .fontWeight(.bold)
@@ -210,7 +227,7 @@ struct PricingTierCard: View {
                             }
                         }
                         
-                        Text(tier.description)
+                        Text(productID.tier.description)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -218,25 +235,26 @@ struct PricingTierCard: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("$\(tier.price, specifier: "%.2f")")
+                        Text(product.displayPrice)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.blue)
                         
-                        Text("\(tier.credits) photos")
+                        Text("\(productID.tier.credits) photos")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Text("$\(tier.costPerPhoto, specifier: "%.3f") each")
+                        let costPerPhoto = product.price / Decimal(productID.tier.credits)
+                        Text("$\(NSDecimalNumber(decimal: costPerPhoto).doubleValue, specifier: "%.3f") each")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                 }
                 
                 // Value comparison
-                if tier == .value {
+                if productID == .value {
                     HStack {
-                        Text("vs $0.99 pack:")
+                        Text("vs Starter pack:")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         Text("Save $2.00+ per photo!")
