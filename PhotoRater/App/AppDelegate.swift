@@ -19,6 +19,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 print("Error signing in anonymously: \(error.localizedDescription)")
             } else {
                 print("Successfully signed in anonymously")
+                // Initialize user credits after authentication
+                DispatchQueue.main.async {
+                    PricingManager.shared.loadUserCredits()
+                }
             }
         }
         

@@ -13,22 +13,52 @@ struct ContentView: View {
     @State private var rankedPhotos: [RankedPhoto] = []
     @State private var isProcessing = false
     @State private var showingImagePicker = false
+    @State private var showingPricingView = false
     @State private var errorMessage: String? = nil
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
+    
+    @StateObject private var pricingManager = PricingManager.shared
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Title
-                    Text("Photo Ranker")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                    
-                    Text("Upload your photos to get AI-powered recommendations")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                    // Title and credits display
+                    VStack(spacing: 8) {
+                        Text("Photo Ranker")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Text("Upload your photos to get AI-powered recommendations")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        // Credits display
+                        HStack {
+                            Image(systemName: "bolt.fill")
+                                .foregroundColor(.blue)
+                            Text("\(pricingManager.userCredits) credits")
+                                .fontWeight(.medium)
+                                .foregroundColor(.blue)
+                            
+                            Button("Get More") {
+                                showingPricingView = true
+                            }
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.05))
+                        .cornerRadius(10)
+                    }
                     
                     // Photo picker button
                     Button(action: {
@@ -96,11 +126,11 @@ struct ContentView: View {
                     
                     // Rank photos button
                     Button(action: rankPhotos) {
-                        Text("Rank Photos")
+                        Text(getButtonText())
                             .fontWeight(.semibold)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(selectedImages.isEmpty ? Color.gray : Color.blue)
+                            .background(getButtonColor())
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
@@ -138,6 +168,14 @@ struct ContentView: View {
             .sheet(isPresented: $showingImagePicker) {
                 PhotosPicker(selectedImages: $selectedImages)
             }
+            .sheet(isPresented: $showingPricingView) {
+                PricingView()
+            }
+            .alert("Error", isPresented: $showingAlert) {
+                Button("OK") { }
+            } message: {
+                Text(alertMessage)
+            }
             .overlay(
                 Group {
                     if isProcessing {
@@ -148,11 +186,43 @@ struct ContentView: View {
                     }
                 }
             )
+            .onAppear {
+                // Load user credits when view appears
+                pricingManager.loadUserCredits()
+            }
+        }
+    }
+    
+    private func getButtonText() -> String {
+        let photoCount = selectedImages.count
+        if photoCount == 0 {
+            return "Select Photos First"
+        } else if pricingManager.canAnalyzePhotos(count: photoCount) {
+            return "Rank \(photoCount) Photo\(photoCount == 1 ? "" : "s")"
+        } else {
+            return "Need More Credits (\(photoCount) required)"
+        }
+    }
+    
+    private func getButtonColor() -> Color {
+        let photoCount = selectedImages.count
+        if photoCount == 0 {
+            return .gray
+        } else if pricingManager.canAnalyzePhotos(count: photoCount) {
+            return .blue
+        } else {
+            return .orange
         }
     }
     
     func rankPhotos() {
-        guard !selectedImages.isEmpty else { return }
+        let photoCount = selectedImages.count
+        
+        // Check if user has enough credits
+        guard pricingManager.canAnalyzePhotos(count: photoCount) else {
+            showingPricingView = true
+            return
+        }
         
         isProcessing = true
         errorMessage = nil
@@ -169,9 +239,15 @@ struct ContentView: View {
                 switch result {
                 case .success(let rankedPhotos):
                     self.rankedPhotos = rankedPhotos
+                    // Deduct credits after successful analysis
+                    pricingManager.deductCredits(count: photoCount)
                 case .failure(let error):
-                    errorMessage = "Error processing photos: \(error.localizedDescription)"
-                    print("Error processing photos: \(error)")
+                    if error.localizedDescription.contains("Insufficient credits") {
+                        showingPricingView = true
+                    } else {
+                        alertMessage = "Error processing photos: \(error.localizedDescription)"
+                        showingAlert = true
+                    }
                 }
             }
         }
