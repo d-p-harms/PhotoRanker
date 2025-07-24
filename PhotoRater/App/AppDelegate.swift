@@ -20,7 +20,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             } else {
                 print("Successfully signed in anonymously")
                 // Initialize user credits after authentication
-                PricingManager.shared.loadUserCreditsSync()
+                Task {
+                    await PricingManager.shared.loadUserCredits()
+                }
             }
         }
         

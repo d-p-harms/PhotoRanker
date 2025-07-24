@@ -158,13 +158,6 @@ class PricingManager: ObservableObject {
         }
     }
     
-    // Add a non-async version for backwards compatibility
-    func loadUserCredits() {
-        Task {
-            await loadUserCredits()
-        }
-    }
-    
     func purchaseProduct(_ productID: ProductID) async {
         guard let product = products.first(where: { $0.id == productID.rawValue }) else {
             print("Product not found: \(productID.rawValue)")
