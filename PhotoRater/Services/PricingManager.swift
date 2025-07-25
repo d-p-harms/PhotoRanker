@@ -1,13 +1,10 @@
 // PricingManager.swift
-// Updated to use StoreKit 2 APIs to resolve deprecation warnings
+// Fixed version with proper async/await handling
 
 import Foundation
 import StoreKit
 import FirebaseAuth
 import FirebaseFirestore
-
-// Import StoreKit's Transaction type specifically to avoid ambiguity
-import StoreKit
 
 @MainActor
 class PricingManager: ObservableObject {
@@ -16,6 +13,7 @@ class PricingManager: ObservableObject {
     @Published var userCredits: Int = 0
     @Published var isLoading = false
     @Published var products: [Product] = []
+    @Published var isInitialized = false
     
     private var updateListenerTask: Task<Void, Error>? = nil
     
@@ -92,6 +90,9 @@ class PricingManager: ObservableObject {
         Task {
             await loadProducts()
             await loadUserCredits()
+            await MainActor.run {
+                self.isInitialized = true
+            }
         }
     }
     
@@ -126,11 +127,11 @@ class PricingManager: ObservableObject {
         }
     }
     
+    // FIXED: Replaced loadUserCreditsSync with proper async handling
     func loadUserCredits() async {
         guard let userId = Auth.auth().currentUser?.uid else {
-            // If no user, wait for authentication then initialize
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            await loadUserCredits()
+            // If no user, wait for authentication then try again
+            print("No authenticated user, waiting...")
             return
         }
         
@@ -146,7 +147,10 @@ class PricingManager: ObservableObject {
                 } else {
                     // New user - initialize with free credits
                     print("New user detected, initializing with free credits")
-                    self.initializeNewUser()
+                    self.userCredits = PricingTier.free.credits
+                    Task {
+                        await self.saveCreditsToFirebase()
+                    }
                 }
             }
         } catch {
@@ -202,14 +206,16 @@ class PricingManager: ObservableObject {
             let productIds = ProductID.allCases.map { $0.rawValue }
             let loadedProducts = try await Product.products(for: productIds)
             
-            self.products = loadedProducts.sorted { product1, product2 in
-                // Sort by price (starter first, then value)
-                return product1.price < product2.price
-            }
-            
-            print("Loaded \(self.products.count) products")
-            for product in self.products {
-                print("Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
+            await MainActor.run {
+                self.products = loadedProducts.sorted { product1, product2 in
+                    // Sort by price (starter first, then value)
+                    return product1.price < product2.price
+                }
+                
+                print("Loaded \(self.products.count) products")
+                for product in self.products {
+                    print("Product: \(product.id) - \(product.displayName) - \(product.displayPrice)")
+                }
             }
         } catch {
             print("Failed to load products: \(error)")

@@ -24,7 +24,6 @@
 		AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */; };
 		AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AB2DB334660005A7DC /* RankedPhoto.swift */; };
 		AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AE2DB334850005A7DC /* PhotoTag.swift */; };
-		AB8032B82DB33C190005A7DC /* PhotoRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032B72DB33C140005A7DC /* PhotoRanker.swift */; };
 		AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */; };
 		AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C12DB33D170005A7DC /* CriteriaButton.swift */; };
 		AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */; };
@@ -56,7 +55,7 @@
 		AB8032FE2DB343FC0005A7DC /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032FD2DB343FC0005A7DC /* FirebaseStorage */; };
 		AB8033002DB343FC0005A7DC /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032FF2DB343FC0005A7DC /* FirebaseStorageCombine-Community */; };
 		AB8033022DB343FC0005A7DC /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = AB8033012DB343FC0005A7DC /* FirebaseVertexAI */; };
-		AB8033042DB346D40005A7DC /* PhotoRankerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8033032DB346CD0005A7DC /* PhotoRankerApp.swift */; };
+		ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,7 +127,6 @@
 		AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankingCriteria.swift; sourceTree = "<group>"; };
 		AB8032AB2DB334660005A7DC /* RankedPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RankedPhoto.swift; sourceTree = "<group>"; };
 		AB8032AE2DB334850005A7DC /* PhotoTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoTag.swift; sourceTree = "<group>"; };
-		AB8032B72DB33C140005A7DC /* PhotoRanker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRanker.swift; sourceTree = "<group>"; };
 		AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosPicker.swift; sourceTree = "<group>"; };
 		AB8032C12DB33D170005A7DC /* CriteriaButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriteriaButton.swift; sourceTree = "<group>"; };
 		AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoResultCard.swift; sourceTree = "<group>"; };
@@ -136,7 +134,7 @@
 		AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoProcessor.swift; sourceTree = "<group>"; };
 		AB8032CA2DB33DDD0005A7DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = text; path = Assets.xcassets; sourceTree = "<group>"; };
 		AB8032CB2DB33E280005A7DC /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		AB8033032DB346CD0005A7DC /* PhotoRankerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankerApp.swift; sourceTree = "<group>"; };
+		ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankerApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -247,7 +245,7 @@
 		AB80326F2DB18F4A0005A7DC = {
 			isa = PBXGroup;
 			children = (
-				AB8033032DB346CD0005A7DC /* PhotoRankerApp.swift */,
+				ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */,
 				AB8032BB2DB33C730005A7DC /* App */,
 				AB8032BC2DB33C8A0005A7DC /* Models */,
 				AB8032BD2DB33CCF0005A7DC /* Views */,
@@ -276,7 +274,6 @@
 		AB8032BB2DB33C730005A7DC /* App */ = {
 			isa = PBXGroup;
 			children = (
-				AB8032B72DB33C140005A7DC /* PhotoRanker.swift */,
 				AB8032A62DB191900005A7DC /* AppDelegate.swift */,
 			);
 			path = App;
@@ -605,15 +602,14 @@
 				AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */,
 				AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */,
 				AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */,
-				AB8032B82DB33C190005A7DC /* PhotoRanker.swift in Sources */,
 				AB496BE82DDEF2B100B87CA6 /* PhotoDetailView.swift in Sources */,
 				AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
-				AB8033042DB346D40005A7DC /* PhotoRankerApp.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
+				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

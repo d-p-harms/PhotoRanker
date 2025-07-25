@@ -156,17 +156,6 @@ struct PricingView: View {
                     .cornerRadius(8)
                     .padding(.horizontal)
                     
-                    // Risk reduction
-                    VStack(spacing: 4) {
-                        Text("💯 Satisfaction Guaranteed")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                        Text("Not happy? Full refund within 7 days")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    
                     Spacer(minLength: 20)
                 }
             }

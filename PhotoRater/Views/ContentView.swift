@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PhotoRater
 //
-//  Created by David Harms on 4/17/25.
+//  Fixed version with proper loading states
 //
 
 import SwiftUI
@@ -36,28 +36,43 @@ struct ContentView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         
-                        // Credits display
-                        HStack {
-                            Image(systemName: "bolt.fill")
+                        // Credits display with loading state
+                        if pricingManager.isInitialized {
+                            HStack {
+                                Image(systemName: "bolt.fill")
+                                    .foregroundColor(.blue)
+                                Text("\(pricingManager.userCredits) credits")
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.blue)
+                                
+                                Button("Get More") {
+                                    showingPricingView = true
+                                }
+                                .font(.caption)
                                 .foregroundColor(.blue)
-                            Text("\(pricingManager.userCredits) credits")
-                                .fontWeight(.medium)
-                                .foregroundColor(.blue)
-                            
-                            Button("Get More") {
-                                showingPricingView = true
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
                             }
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.blue.opacity(0.05))
+                            .cornerRadius(10)
+                        } else {
+                            // Loading state
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Loading credits...")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(10)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.blue.opacity(0.05))
-                        .cornerRadius(10)
                     }
                     
                     // Photo picker button
@@ -84,11 +99,24 @@ struct ContentView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
                                 ForEach(0..<selectedImages.count, id: \.self) { index in
-                                    Image(uiImage: selectedImages[index])
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 80, height: 80)
-                                        .cornerRadius(8)
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(uiImage: selectedImages[index])
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 80, height: 80)
+                                            .cornerRadius(8)
+                                        
+                                        // Remove button
+                                        Button(action: {
+                                            selectedImages.remove(at: index)
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.red)
+                                                .background(Color.white)
+                                                .clipShape(Circle())
+                                        }
+                                        .padding(2)
+                                    }
                                 }
                             }
                             .padding(.horizontal)
@@ -134,7 +162,7 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .disabled(selectedImages.isEmpty || isProcessing)
+                    .disabled(selectedImages.isEmpty || isProcessing || !pricingManager.isInitialized)
                     .padding(.horizontal)
                     
                     // Error message
@@ -142,14 +170,28 @@ struct ContentView: View {
                         Text(errorMessage)
                             .foregroundColor(.red)
                             .padding()
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
                     }
                     
                     // Ranked photos - Single column layout
                     if !rankedPhotos.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Your Top Photos")
-                                .font(.headline)
-                                .padding(.horizontal)
+                            HStack {
+                                Text("Your Top Photos")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Button("Clear Results") {
+                                    rankedPhotos = []
+                                    selectedImages = []
+                                }
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            }
+                            .padding(.horizontal)
                             
                             // Single column of photo cards
                             VStack(spacing: 16) {
@@ -160,98 +202,107 @@ struct ContentView: View {
                             }
                         }
                         .padding(.bottom, 20)
-                    }
-                }
-                .padding(.bottom)
-            }
-            .navigationBarHidden(true)
-            .sheet(isPresented: $showingImagePicker) {
-                PhotosPicker(selectedImages: $selectedImages)
-            }
-            .sheet(isPresented: $showingPricingView) {
-                PricingView()
-            }
-            .alert("Error", isPresented: $showingAlert) {
-                Button("OK") { }
-            } message: {
-                Text(alertMessage)
-            }
-            .overlay(
-                Group {
-                    if isProcessing {
-                        ProcessingOverlay(
-                            message: "Processing your photos...",
-                            progress: nil
-                        )
-                    }
-                }
-            )
-            .onAppear {
-                // Load user credits when view appears
-                Task {
-                    await pricingManager.loadUserCredits()
-                }
-            }
-        }
-    }
-    
-    private func getButtonText() -> String {
-        let photoCount = selectedImages.count
-        if photoCount == 0 {
-            return "Select Photos First"
-        } else if pricingManager.canAnalyzePhotos(count: photoCount) {
-            return "Rank \(photoCount) Photo\(photoCount == 1 ? "" : "s")"
-        } else {
-            return "Need More Credits (\(photoCount) required)"
-        }
-    }
-    
-    private func getButtonColor() -> Color {
-        let photoCount = selectedImages.count
-        if photoCount == 0 {
-            return .gray
-        } else if pricingManager.canAnalyzePhotos(count: photoCount) {
-            return .blue
-        } else {
-            return .orange
-        }
-    }
-    
-    func rankPhotos() {
-        let photoCount = selectedImages.count
-        
-        // Check if user has enough credits
-        guard pricingManager.canAnalyzePhotos(count: photoCount) else {
-            showingPricingView = true
-            return
-        }
-        
-        isProcessing = true
-        errorMessage = nil
-        rankedPhotos = []
-        
-        // Call the PhotoProcessor to rank the photos
-        PhotoProcessor.shared.rankPhotos(
-            images: selectedImages,
-            criteria: selectedCriteria
-        ) { result in
-            DispatchQueue.main.async {
-                isProcessing = false
-                
-                switch result {
-                case .success(let rankedPhotos):
-                    self.rankedPhotos = rankedPhotos
-                    // Deduct credits after successful analysis
-                    pricingManager.deductCredits(count: photoCount)
-                case .failure(let error):
-                    if error.localizedDescription.contains("Insufficient credits") {
-                        showingPricingView = true
-                    } else {
-                        alertMessage = "Error processing photos: \(error.localizedDescription)"
-                        showingAlert = true
-                    }
-                }
-            }
-        }
-    }
-}
+                                            }
+                                        }
+                                        .padding(.bottom)
+                                    }
+                                    .navigationBarHidden(true)
+                                    .sheet(isPresented: $showingImagePicker) {
+                                        PhotosPicker(selectedImages: $selectedImages)
+                                    }
+                                    .sheet(isPresented: $showingPricingView) {
+                                        PricingView()
+                                    }
+                                    .alert("Error", isPresented: $showingAlert) {
+                                        Button("OK") {
+                                            errorMessage = nil
+                                        }
+                                    } message: {
+                                        Text(alertMessage)
+                                    }
+                                    .overlay(
+                                        Group {
+                                            if isProcessing {
+                                                ProcessingOverlay(
+                                                    message: "Processing your photos...",
+                                                    progress: nil
+                                                )
+                                            }
+                                        }
+                                    )
+                                    .onAppear {
+                                        // Load user credits when view appears
+                                        Task {
+                                            await pricingManager.loadUserCredits()
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Make sure these functions are INSIDE the ContentView struct
+                            private func getButtonText() -> String {
+                                let photoCount = selectedImages.count
+                                if photoCount == 0 {
+                                    return "Select Photos First"
+                                } else if pricingManager.canAnalyzePhotos(count: photoCount) {
+                                    return "Rank \(photoCount) Photo\(photoCount == 1 ? "" : "s")"
+                                } else {
+                                    return "Need More Credits (\(photoCount) required)"
+                                }
+                            }
+                            
+                            private func getButtonColor() -> Color {
+                                let photoCount = selectedImages.count
+                                if photoCount == 0 {
+                                    return .gray
+                                } else if pricingManager.canAnalyzePhotos(count: photoCount) {
+                                    return .blue
+                                } else {
+                                    return .orange
+                                }
+                            }
+                            
+                            func rankPhotos() {
+                                let photoCount = selectedImages.count
+                                
+                                // Check if user has enough credits
+                                guard pricingManager.canAnalyzePhotos(count: photoCount) else {
+                                    showingPricingView = true
+                                    return
+                                }
+                                
+                                isProcessing = true
+                                errorMessage = nil
+                                rankedPhotos = []
+                                
+                                // Call the PhotoProcessor to rank the photos
+                                PhotoProcessor.shared.rankPhotos(
+                                    images: selectedImages,
+                                    criteria: selectedCriteria
+                                ) { result in
+                                    DispatchQueue.main.async {
+                                        isProcessing = false
+                                        
+                                        switch result {
+                                        case .success(let rankedPhotos):
+                                            self.rankedPhotos = rankedPhotos
+                                            // Deduct credits after successful analysis
+                                            pricingManager.deductCredits(count: photoCount)
+                                        case .failure(let error):
+                                            if error.localizedDescription.contains("Insufficient credits") {
+                                                showingPricingView = true
+                                            } else if error.localizedDescription.contains("Maximum") && error.localizedDescription.contains("photos") {
+                                                alertMessage = "Please select fewer photos. Maximum 25 photos per session."
+                                                showingAlert = true
+                                            } else if error.localizedDescription.contains("network") || error.localizedDescription.contains("connection") {
+                                                alertMessage = "Network error. Please check your connection and try again."
+                                                showingAlert = true
+                                            } else {
+                                                alertMessage = "Error processing photos: \(error.localizedDescription)"
+                                                showingAlert = true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } // This closes the ContentView struct
