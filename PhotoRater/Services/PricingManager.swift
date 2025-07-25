@@ -1,5 +1,5 @@
 // PricingManager.swift
-// Fixed version with proper async/await handling
+// Updated version with debug credit override for immediate testing
 
 import Foundation
 import StoreKit
@@ -103,10 +103,19 @@ class PricingManager: ObservableObject {
     // MARK: - Public Methods
     
     func canAnalyzePhotos(count: Int) -> Bool {
+        #if DEBUG
+        return true // Always allow analysis in debug builds
+        #endif
+        
         return userCredits >= count
     }
     
     func deductCredits(count: Int) {
+        #if DEBUG
+        print("🔧 DEBUG: Would deduct \(count) credits (not actually deducting in debug mode)")
+        return
+        #endif
+        
         userCredits = max(0, userCredits - count)
         Task {
             await saveCreditsToFirebase()
@@ -127,8 +136,17 @@ class PricingManager: ObservableObject {
         }
     }
     
-    // FIXED: Replaced loadUserCreditsSync with proper async handling
     func loadUserCredits() async {
+        #if DEBUG
+        // Give unlimited credits in debug mode for testing
+        await MainActor.run {
+            self.userCredits = 999
+            self.isInitialized = true
+            print("🔧 DEBUG: Initialized with 999 credits for testing")
+        }
+        return
+        #endif
+        
         guard let userId = Auth.auth().currentUser?.uid else {
             // If no user, wait for authentication then try again
             print("No authenticated user, waiting...")
@@ -223,6 +241,11 @@ class PricingManager: ObservableObject {
     }
     
     private func saveCreditsToFirebase() async {
+        #if DEBUG
+        print("🔧 DEBUG: Would save credits to Firebase (skipping in debug mode)")
+        return
+        #endif
+        
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()
