@@ -1,5 +1,5 @@
 // PromoCodeManager.swift
-// Production version with debug section removed from view
+// Updated with single secure promo code
 
 import Foundation
 import FirebaseFirestore
@@ -15,42 +15,14 @@ class PromoCodeManager: ObservableObject {
     
     private let db = Firestore.firestore()
     
-    // Predefined promo codes
+    // Single secure promo code
     private let promoCodes: [String: PromoCodeDetails] = [
-        "APPSTORE2025": PromoCodeDetails(
-            credits: 999,
-            description: "App Store Review - Unlimited Credits",
-            isUnlimited: true,
-            expirationDate: Calendar.current.date(byAdding: .month, value: 6, to: Date())!,
-            maxUses: 100
-        ),
-        "LAUNCH50": PromoCodeDetails(
-            credits: 50,
-            description: "Launch Special - 50 Free Credits",
-            isUnlimited: false,
-            expirationDate: Calendar.current.date(byAdding: .month, value: 2, to: Date())!,
-            maxUses: 1000
-        ),
-        "REVIEWER": PromoCodeDetails(
-            credits: 999,
-            description: "Reviewer Access - Unlimited",
-            isUnlimited: true,
-            expirationDate: Calendar.current.date(byAdding: .year, value: 1, to: Date())!,
-            maxUses: 50
-        ),
-        "TESTFLIGHT": PromoCodeDetails(
-            credits: 100,
-            description: "TestFlight Beta - 100 Credits",
-            isUnlimited: false,
-            expirationDate: Calendar.current.date(byAdding: .month, value: 3, to: Date())!,
-            maxUses: 500
-        ),
-        "UNLIMITED": PromoCodeDetails(
+        "K9X7M3P8Q2W5": PromoCodeDetails(
             credits: 999,
             description: "Unlimited Access",
             isUnlimited: true,
-            expirationDate: Calendar.current.date(byAdding: .year, value: 1, to: Date())!,
-            maxUses: 10
+            expirationDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
+            maxUses: 1000
         )
     ]
     
@@ -102,7 +74,7 @@ class PromoCodeManager: ObservableObject {
                 PricingManager.shared.setUnlimitedAccess(until: promoDetails.expirationDate)
                 await updateUI(
                     isValidating: false,
-                    message: "🎉 Unlimited credits activated! Enjoy unlimited photo analysis.",
+                    message: "🎉 Unlimited credits activated! Enjoy unlimited photo analysis for 2 years.",
                     success: true
                 )
             } else {
@@ -141,6 +113,7 @@ class PromoCodeManager: ObservableObject {
     
     private func ensureAuthenticated() async -> String? {
         if let currentUser = Auth.auth().currentUser {
+            print("✅ User already authenticated: \(currentUser.uid)")
             return currentUser.uid
         }
         

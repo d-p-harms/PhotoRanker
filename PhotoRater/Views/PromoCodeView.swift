@@ -1,5 +1,5 @@
 // PromoCodeView.swift
-// Fixed version that resolves all compilation errors
+// Updated for single secure promo code
 
 import SwiftUI
 import FirebaseAuth
@@ -75,7 +75,7 @@ struct PromoCodeView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("Enter your promo code to unlock additional credits and features")
+                Text("Enter your exclusive promo code to unlock unlimited photo analysis")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -92,7 +92,7 @@ struct PromoCodeView: View {
                     .font(.headline)
                     .fontWeight(.medium)
                 
-                TextField("Enter code here", text: $promoCode)
+                TextField("Enter 12-character code", text: $promoCode)
                     .textFieldStyle(CustomTextFieldStyle())
                     .autocapitalization(.allCharacters)
                     .disableAutocorrection(true)
@@ -104,7 +104,7 @@ struct PromoCodeView: View {
                         }
                     }
                 
-                Text("Promo codes are case-insensitive")
+                Text("Format: K9X7M3P8Q2W5 (12 characters, letters and numbers)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -188,38 +188,38 @@ struct PromoCodeView: View {
                 Image(systemName: "info.circle.fill")
                     .foregroundColor(.blue)
                 
-                Text("How to Get Promo Codes")
+                Text("About Promo Codes")
                     .font(.headline)
                     .fontWeight(.semibold)
             }
             
             VStack(spacing: 16) {
                 InfoRow(
-                    icon: "heart.fill",
-                    iconColor: .red,
-                    title: "Leave a Review",
-                    description: "Rate us on the App Store for exclusive codes"
-                )
-                
-                InfoRow(
-                    icon: "envelope.fill",
-                    iconColor: .blue,
-                    title: "Newsletter",
-                    description: "Subscribe for special promotions and updates"
-                )
-                
-                InfoRow(
-                    icon: "person.3.fill",
+                    icon: "infinity",
                     iconColor: .green,
-                    title: "Refer Friends",
-                    description: "Share the app and earn bonus credits"
+                    title: "Unlimited Access",
+                    description: "Get unlimited photo analysis for 2 years"
                 )
                 
                 InfoRow(
-                    icon: "sparkles",
+                    icon: "shield.fill",
+                    iconColor: .blue,
+                    title: "Secure Codes",
+                    description: "12-character alphanumeric codes for security"
+                )
+                
+                InfoRow(
+                    icon: "clock.fill",
+                    iconColor: .orange,
+                    title: "Limited Availability",
+                    description: "Exclusive codes with usage limits"
+                )
+                
+                InfoRow(
+                    icon: "checkmark.seal.fill",
                     iconColor: .purple,
-                    title: "Special Events",
-                    description: "Follow our social media for limited-time codes"
+                    title: "One-Time Use",
+                    description: "Each code can only be used once per account"
                 )
             }
         }
