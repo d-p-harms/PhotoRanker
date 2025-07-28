@@ -16,6 +16,22 @@ struct PhotoRaterApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    // Ensure Firebase is configured
+                    if FirebaseApp.app() == nil {
+                        FirebaseApp.configure()
+                    }
+                }
         }
+    }
+}
+
+// Extension for handling app lifecycle events
+extension PhotoRaterApp {
+    private func setupAppearance() {
+        // Configure global app appearance if needed
+        UINavigationBar.appearance().largeTitleTextAttributes = [
+            .foregroundColor: UIColor.label
+        ]
     }
 }
