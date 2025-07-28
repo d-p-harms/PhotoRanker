@@ -1,8 +1,10 @@
+
 import UIKit
 import Foundation
 import Firebase
 import FirebaseStorage
 import FirebaseFunctions
+import FirebaseAuth
 import ImageIO
 
 class PhotoProcessor: ObservableObject {
@@ -10,21 +12,33 @@ class PhotoProcessor: ObservableObject {
     private let functions = Functions.functions()
     private let storage = Storage.storage()
     
-    // Optimal settings for AI analysis
+    // BALANCED: Keep quality settings, add security limits
     private let optimalAISize: CGFloat = 1536
-    private let maxAISize: CGFloat = 2048
+    private let maxAISize: CGFloat = 2048  // Allow up to 2048px without forced resize
     private let minAISize: CGFloat = 768
     private let maxBatchSize = 12
     private let maxPhotosPerSession = 25
+    private let maxFileSize = 10 * 1024 * 1024 // 10MB - reasonable limit
     
-    private init() {
-        // Configure functions region if needed
-        // functions.region = "us-central1"
-    }
+    // SECURITY: Essential rate limiting only
+    private var lastRequestTime: Date = Date.distantPast
+    private var requestCount: Int = 0
+    private let requestWindow: TimeInterval = 3600 // 1 hour
+    private let maxRequestsPerHour = 50
+    
+    private init() {}
     
     func rankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
-        // Validate photo count
+        // ESSENTIAL SECURITY: Rate limiting check
+        guard checkRateLimit() else {
+            let error = NSError(domain: "PhotoProcessor", code: 429,
+                               userInfo: [NSLocalizedDescriptionKey: "Too many requests. Please wait before trying again."])
+            completion(.failure(error))
+            return
+        }
+        
+        // ESSENTIAL SECURITY: Photo count validation
         guard images.count <= maxPhotosPerSession else {
             let error = NSError(domain: "PhotoProcessor", code: 1,
                                userInfo: [NSLocalizedDescriptionKey: "Maximum \(maxPhotosPerSession) photos allowed per session"])
@@ -32,7 +46,15 @@ class PhotoProcessor: ObservableObject {
             return
         }
         
-        // Upload optimized photos first
+        // MINIMAL VALIDATION: Only check for obvious issues
+        guard validateImagesBasic(images) else {
+            let error = NSError(domain: "PhotoProcessor", code: 2,
+                               userInfo: [NSLocalizedDescriptionKey: "One or more images failed validation"])
+            completion(.failure(error))
+            return
+        }
+        
+        // Upload photos with MINIMAL processing
         uploadOptimizedPhotos(images) { uploadResult in
             switch uploadResult {
             case .success(let photoUrls):
@@ -41,6 +63,51 @@ class PhotoProcessor: ObservableObject {
                 completion(.failure(error))
             }
         }
+    }
+    
+    private func checkRateLimit() -> Bool {
+        let now = Date()
+        
+        // Reset counter if window has passed
+        if now.timeIntervalSince(lastRequestTime) > requestWindow {
+            requestCount = 0
+            lastRequestTime = now
+        }
+        
+        requestCount += 1
+        
+        if requestCount > maxRequestsPerHour {
+            print("🚨 Rate limit exceeded: \(requestCount) requests in window")
+            return false
+        }
+        
+        return true
+    }
+    
+    // MINIMAL VALIDATION: Only check for obvious problems
+    private func validateImagesBasic(_ images: [UIImage]) -> Bool {
+        for (index, image) in images.enumerated() {
+            // Check image size (very basic)
+            let imageSize = image.size
+            if imageSize.width < 50 || imageSize.height < 50 {
+                print("🚨 Image \(index) too small: \(imageSize)")
+                return false
+            }
+            
+            // Check for valid image data
+            guard let imageData = image.jpegData(compressionQuality: 1.0) else {
+                print("🚨 Image \(index) failed to convert to JPEG")
+                return false
+            }
+            
+            // Check file size only
+            if imageData.count > maxFileSize {
+                print("🚨 Image \(index) file size too large: \(imageData.count) bytes")
+                return false
+            }
+        }
+        
+        return true
     }
     
     private func processInBatches(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
@@ -96,6 +163,7 @@ class PhotoProcessor: ObservableObject {
         processNextBatch()
     }
     
+    // QUALITY-FOCUSED: Minimal processing, preserve original quality
     private func optimizeImageForAI(_ image: UIImage) -> Data? {
         let originalSize = image.size
         let scale = image.scale
@@ -107,73 +175,88 @@ class PhotoProcessor: ObservableObject {
         
         print("Original image: \(Int(pixelWidth))x\(Int(pixelHeight)) pixels")
         
-        // Determine optimal target size
+        // QUALITY FIRST: Only resize if absolutely necessary
         let targetSize: CGFloat
         if maxDimension < minAISize {
             targetSize = minAISize
             print("Upscaling small image to \(Int(targetSize))px")
         } else if maxDimension > maxAISize {
-            targetSize = optimalAISize
-            print("Downscaling large image to \(Int(targetSize))px")
-        } else if maxDimension < optimalAISize {
-            targetSize = optimalAISize
-            print("Optimizing image to \(Int(targetSize))px")
+            // Only resize if truly too large (over 2048px)
+            targetSize = maxAISize
+            print("Resizing oversized image to \(Int(targetSize))px")
         } else {
+            // DON'T RESIZE - keep original dimensions for best quality
             targetSize = maxDimension
-            print("Image already optimal at \(Int(targetSize))px")
+            print("Keeping original size: \(Int(targetSize))px (optimal quality)")
         }
         
-        // Calculate new dimensions maintaining aspect ratio
-        let aspectRatio = pixelWidth / pixelHeight
-        let newWidth: CGFloat
-        let newHeight: CGFloat
-        
-        if aspectRatio > 1 {
-            // Landscape
-            newWidth = targetSize
-            newHeight = targetSize / aspectRatio
-        } else {
-            // Portrait or square
-            newHeight = targetSize
-            newWidth = targetSize * aspectRatio
-        }
-        
-        // High-quality resize using Core Graphics
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1.0
-        format.opaque = true
-        
-        let renderer = UIGraphicsImageRenderer(
-            size: CGSize(width: newWidth, height: newHeight),
-            format: format
-        )
-        
-        let resizedImage = renderer.image { context in
-            context.cgContext.interpolationQuality = .high
-            context.cgContext.setShouldAntialias(true)
-            context.cgContext.setAllowsAntialiasing(true)
+        // Only resize if target size is different from original
+        let resizedImage: UIImage
+        if targetSize != maxDimension {
+            // Calculate new dimensions maintaining aspect ratio
+            let aspectRatio = pixelWidth / pixelHeight
+            let newWidth: CGFloat
+            let newHeight: CGFloat
             
-            image.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
-        }
-        
-        // High-quality JPEG compression for AI analysis
-        let jpegData = resizedImage.jpegData(compressionQuality: 0.92)
-        
-        if let data = jpegData {
-            let fileSizeKB = data.count / 1024
-            print("Optimized image: \(Int(newWidth))x\(Int(newHeight))px, \(fileSizeKB)KB")
-            
-            // Validate file size (5MB safety threshold)
-            if fileSizeKB > 5000 {
-                print("Warning: Large file size, reducing quality")
-                return resizedImage.jpegData(compressionQuality: 0.85)
+            if aspectRatio > 1 {
+                // Landscape
+                newWidth = targetSize
+                newHeight = targetSize / aspectRatio
+            } else {
+                // Portrait or square
+                newHeight = targetSize
+                newWidth = targetSize * aspectRatio
             }
+            
+            // High-quality resize
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1.0
+            format.opaque = true
+            
+            let renderer = UIGraphicsImageRenderer(
+                size: CGSize(width: newWidth, height: newHeight),
+                format: format
+            )
+            
+            resizedImage = renderer.image { context in
+                context.cgContext.interpolationQuality = .high
+                context.cgContext.setShouldAntialias(true)
+                context.cgContext.setAllowsAntialiasing(true)
+                
+                image.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
+            }
+        } else {
+            // No resize needed - use original image
+            resizedImage = image
+        }
+        
+        // QUALITY FIRST: High quality compression
+        guard let jpegData = resizedImage.jpegData(compressionQuality: 0.95) else {  // 95% quality
+            print("❌ Failed to create JPEG data")
+            return nil
+        }
+        
+        let fileSizeKB = jpegData.count / 1024
+        print("Final image: \(Int(resizedImage.size.width))x\(Int(resizedImage.size.height))px, \(fileSizeKB)KB")
+        
+        // Only reduce quality if file is extremely large
+        if fileSizeKB > 8000 {  // 8MB threshold
+            print("Very large file, reducing quality slightly")
+            return resizedImage.jpegData(compressionQuality: 0.90)
         }
         
         return jpegData
     }
     
+    // SECURE UPLOAD: User-specific paths but preserve quality
     private func uploadOptimizedPhotos(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            let error = NSError(domain: "PhotoProcessor", code: 401,
+                               userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+            completion(.failure(error))
+            return
+        }
+        
         let dispatchGroup = DispatchGroup()
         var uploadedUrls: [String] = []
         var uploadError: Error?
@@ -188,7 +271,10 @@ class PhotoProcessor: ObservableObject {
                 continue
             }
             
-            let fileName = "ai-analysis/\(UUID().uuidString)_\(Int(Date().timeIntervalSince1970))_\(index).jpg"
+            // SECURITY: User-specific secure file path
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let randomId = UUID().uuidString.prefix(8)
+            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
             let ref = storage.reference().child(fileName)
             
             // Upload optimized image
@@ -220,6 +306,7 @@ class PhotoProcessor: ObservableObject {
         }
     }
     
+    // ESSENTIAL SECURITY: Basic validation with quality preservation
     private func analyzeWithGemini(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         let data: [String: Any] = [
             "photoUrls": photoUrls,
@@ -401,7 +488,7 @@ class PhotoProcessor: ObservableObject {
         }
     }
     
-    // MARK: - Criteria-Specific Logic
+    // MARK: - Criteria-Specific Logic (unchanged)
     
     private func applyCriteriaSpecificLogic(to photos: [RankedPhoto], criteria: RankingCriteria) -> [RankedPhoto] {
         switch criteria {
@@ -451,7 +538,7 @@ class PhotoProcessor: ObservableObject {
         }
     }
     
-    // MARK: - Helper functions for sorting
+    // MARK: - Helper functions for sorting (unchanged)
     
     private func extractPosition(from reason: String?) -> Int {
         guard let reason = reason else { return 999 }
@@ -489,7 +576,7 @@ class PhotoProcessor: ObservableObject {
         return "unknown"
     }
     
-    // MARK: - Balanced Selection Logic
+    // MARK: - Balanced Selection Logic (unchanged)
     
     private func createBalancedSelection(from rankedPhotos: [RankedPhoto], targetCount: Int = 6) -> [RankedPhoto] {
         // Define ideal distribution for a balanced dating profile
@@ -584,7 +671,7 @@ class PhotoProcessor: ObservableObject {
     }
 }
 
-// Helper extension for array chunking
+// Helper extension for array chunking (unchanged)
 extension Array {
     func chunked(into size: Int) -> [[Element]] {
         return stride(from: 0, to: count, by: size).map {
