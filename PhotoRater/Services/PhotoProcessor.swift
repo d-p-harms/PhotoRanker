@@ -64,9 +64,9 @@ class PhotoProcessor: ObservableObject {
         
         func processNextBatch() {
             guard currentBatch < batches.count else {
-                // All batches complete - return sorted results
-                allResults.sort { $0.score > $1.score }
-                completion(.success(allResults))
+                // All batches complete - apply final sorting and selection
+                let finalResults = self.applyCriteriaSpecificLogic(to: allResults, criteria: criteria)
+                completion(.success(finalResults))
                 return
             }
             
@@ -257,7 +257,7 @@ class PhotoProcessor: ObservableObject {
             
             // Parse the results into RankedPhoto objects with full data
             var rankedPhotos: [RankedPhoto] = []
-            
+
             for result in results {
                 guard let fileName = result["fileName"] as? String,
                       let storageURL = result["storageURL"] as? String,
@@ -266,20 +266,20 @@ class PhotoProcessor: ObservableObject {
                     continue
                 }
                 
-                // Parse tags
+                // Parse tags (existing logic)
                 let tagStrings = result["tags"] as? [String] ?? []
                 let tags = tagStrings.compactMap { PhotoTag(rawValue: $0) }
                 
-                // Parse detailed scores
+                // Parse detailed scores (enhanced for new criteria)
                 let detailedScores = DetailedScores(
                     overall: score,
-                    visualQuality: result["visualQuality"] as? Double ?? score,
-                    attractiveness: result["attractivenessScore"] as? Double ?? score,
-                    datingAppeal: result["datingAppealScore"] as? Double ?? score,
-                    swipeWorthiness: result["swipeWorthiness"] as? Double ?? score
+                    visualQuality: result["visualQuality"] as? Double ?? result["faceClarity"] as? Double ?? score,
+                    attractiveness: result["attractivenessScore"] as? Double ?? result["massAppeal"] as? Double ?? score,
+                    datingAppeal: result["datingAppealScore"] as? Double ?? result["conversationValue"] as? Double ?? score,
+                    swipeWorthiness: result["swipeWorthiness"] as? Double ?? result["authenticityLevel"] as? Double ?? score
                 )
                 
-                // Parse technical feedback
+                // Parse technical feedback (existing logic)
                 var technicalFeedback: TechnicalFeedback? = nil
                 if let techFeedback = result["technicalFeedback"] as? [String: Any] {
                     technicalFeedback = TechnicalFeedback(
@@ -289,30 +289,90 @@ class PhotoProcessor: ObservableObject {
                     )
                 }
                 
-                // Parse dating insights
+                // Parse dating insights (enhanced for new criteria)
                 var datingInsights: DatingInsights? = nil
+                
+                // Handle different response formats based on criteria
+                var personalityTraits: [String]? = nil
+                var demographicAppeal: String? = nil
+                var profileRole: String? = nil
+                
                 if let insights = result["datingInsights"] as? [String: Any] {
+                    personalityTraits = insights["personalityProjected"] as? [String]
+                    demographicAppeal = insights["demographicAppeal"] as? String
+                    profileRole = insights["profileRole"] as? String
+                } else {
+                    // Handle new criteria response formats
+                    personalityTraits = result["personalityTraits"] as? [String] ?? result["naturalElements"] as? [String]
+                    demographicAppeal = result["targetDemographics"] as? String ?? result["appealBreadth"] as? String
+                    profileRole = result["positioningAdvice"] as? String ?? result["conversationAdvice"] as? String ?? result["profileRole"] as? String
+                }
+                
+                if personalityTraits != nil || demographicAppeal != nil || profileRole != nil {
                     datingInsights = DatingInsights(
-                        personalityProjected: insights["personalityProjected"] as? [String],
-                        demographicAppeal: insights["demographicAppeal"] as? String,
-                        profileRole: insights["profileRole"] as? String
+                        personalityProjected: personalityTraits,
+                        demographicAppeal: demographicAppeal,
+                        profileRole: profileRole
                     )
                 }
                 
-                // Get all the detailed feedback
-                let strengths = result["strengths"] as? [String]
-                let improvements = result["improvements"] as? [String] ?? result["suggestions"] as? [String]
-                let nextPhotoSuggestions = result["nextPhotoSuggestions"] as? [String]
+                // Get feedback arrays (enhanced for new criteria)
+                var strengths: [String]? = result["strengths"] as? [String]
+                var improvements: [String]? = result["improvements"] as? [String] ?? result["suggestions"] as? [String]
+                var nextPhotoSuggestions: [String]? = result["nextPhotoSuggestions"] as? [String]
                 
-                // Build primary reason (keep existing logic for main display)
+                // Handle new criteria specific fields
+                if let conversationElements = result["conversationElements"] as? [String] {
+                    strengths = conversationElements
+                }
+                if let messageHooks = result["messageHooks"] as? [String] {
+                    nextPhotoSuggestions = messageHooks.map { "Take a photo that highlights: \($0)" }
+                }
+                if let positionReason = result["positionReason"] as? String {
+                    if improvements == nil { improvements = [] }
+                    improvements?.append(positionReason)
+                }
+                
+                // Build primary reason (criteria-specific)
                 var reason = "Analysis completed"
-                if let bestQuality = result["bestQuality"] as? String {
-                    reason = bestQuality
-                    if let suggestions = improvements, !suggestions.isEmpty {
-                        reason = "\(bestQuality) \n\n💡 Tip: \(suggestions[0])"
+                
+                switch criteria {
+                case .profileOrder:
+                    if let position = result["position"] as? String,
+                       let positionReason = result["positionReason"] as? String {
+                        reason = "📍 Position: \(position == "1" ? "Main Photo" : position == "skip" ? "Consider skipping" : "Photo #\(position)")\n\n\(positionReason)"
                     }
-                } else if let directReason = result["reason"] as? String {
-                    reason = directReason
+                    
+                case .conversationStarters:
+                    if let hooks = result["messageHooks"] as? [String], !hooks.isEmpty {
+                        reason = "💬 Conversation starter: \(hooks.first ?? "Interesting elements")"
+                        if hooks.count > 1 {
+                            reason += "\n\nOther talking points: \(hooks.dropFirst().joined(separator: ", "))"
+                        }
+                    }
+                    
+                case .broadAppeal:
+                    if let appealType = result["appealBreadth"] as? String,
+                       let demographics = result["targetDemographics"] as? [String] {
+                        reason = "🎯 Appeal: \(appealType.capitalized)\n\nAttracts: \(demographics.joined(separator: ", "))"
+                    }
+                    
+                case .authenticity:
+                    if let authenticityLevel = result["authenticityLevel"] as? String,
+                       let genuinenessFactors = result["genuinenessFactors"] as? String {
+                        reason = "✨ Authenticity: \(authenticityLevel.replacingOccurrences(of: "_", with: " ").capitalized)\n\n\(genuinenessFactors)"
+                    }
+                    
+                default:
+                    // Use existing logic for other criteria
+                    if let bestQuality = result["bestQuality"] as? String {
+                        reason = bestQuality
+                        if let suggestions = improvements, !suggestions.isEmpty {
+                            reason = "\(bestQuality)\n\n💡 Tip: \(suggestions[0])"
+                        }
+                    } else if let directReason = result["reason"] as? String {
+                        reason = directReason
+                    }
                 }
                 
                 let rankedPhoto = RankedPhoto(
@@ -335,14 +395,98 @@ class PhotoProcessor: ObservableObject {
             
             print("Successfully created \(rankedPhotos.count) ranked photos")
             
-            // Apply balanced selection if criteria is .balanced
-            if criteria == .balanced {
-                let balancedPhotos = self.createBalancedSelection(from: rankedPhotos, targetCount: 6)
-                completion(.success(balancedPhotos))
-            } else {
-                completion(.success(rankedPhotos))
-            }
+            // Apply criteria-specific logic
+            let finalResults = self.applyCriteriaSpecificLogic(to: rankedPhotos, criteria: criteria)
+            completion(.success(finalResults))
         }
+    }
+    
+    // MARK: - Criteria-Specific Logic
+    
+    private func applyCriteriaSpecificLogic(to photos: [RankedPhoto], criteria: RankingCriteria) -> [RankedPhoto] {
+        switch criteria {
+        case .balanced:
+            return createBalancedSelection(from: photos, targetCount: 6)
+            
+        case .profileOrder:
+            // Sort by score (positioning value) and group by recommended position
+            return photos.sorted { photo1, photo2 in
+                // Extract position from reason if available
+                let position1 = extractPosition(from: photo1.reason)
+                let position2 = extractPosition(from: photo2.reason)
+                
+                if position1 != position2 {
+                    return position1 < position2
+                }
+                return photo1.score > photo2.score
+            }
+            
+        case .conversationStarters:
+            // Sort by conversation potential score
+            return photos.sorted { $0.score > $1.score }
+            
+        case .broadAppeal:
+            // Sort by appeal score but group broad vs niche
+            return photos.sorted { photo1, photo2 in
+                // Check if one is broad appeal and other is niche
+                let appeal1 = extractAppealType(from: photo1.reason)
+                let appeal2 = extractAppealType(from: photo2.reason)
+                
+                if appeal1 == "broad" && appeal2 != "broad" {
+                    return true
+                }
+                if appeal2 == "broad" && appeal1 != "broad" {
+                    return false
+                }
+                return photo1.score > photo2.score
+            }
+            
+        case .authenticity:
+            // Sort by authenticity score
+            return photos.sorted { $0.score > $1.score }
+            
+        default:
+            // Default sorting by score for other criteria
+            return photos.sorted { $0.score > $1.score }
+        }
+    }
+    
+    // MARK: - Helper functions for sorting
+    
+    private func extractPosition(from reason: String?) -> Int {
+        guard let reason = reason else { return 999 }
+        
+        if reason.contains("Main Photo") || reason.contains("Photo #1") {
+            return 1
+        } else if reason.contains("Photo #2") {
+            return 2
+        } else if reason.contains("Photo #3") {
+            return 3
+        } else if reason.contains("Photo #4") {
+            return 4
+        } else if reason.contains("Photo #5") {
+            return 5
+        } else if reason.contains("Photo #6") {
+            return 6
+        } else if reason.contains("skip") {
+            return 999
+        }
+        
+        return 99 // Supporting photos
+    }
+    
+    private func extractAppealType(from reason: String?) -> String {
+        guard let reason = reason else { return "unknown" }
+        
+        if reason.lowercased().contains("broad") {
+            return "broad"
+        } else if reason.lowercased().contains("niche") {
+            return "niche"
+        } else if reason.lowercased().contains("moderate") {
+            return "moderate"
+        }
+        
+        return "unknown"
     }
     
     // MARK: - Balanced Selection Logic

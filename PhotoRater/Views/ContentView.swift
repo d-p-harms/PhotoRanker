@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PhotoRater
 //
-//  Fixed version with proper loading states and working clear button
+//  Updated with new ranking criteria support
 //
 
 import SwiftUI
@@ -123,17 +123,50 @@ struct ContentView: View {
                         }
                     }
                     
-                    // Criteria selection
-                    Text("Select Ranking Criteria")
+                    // Criteria selection - Updated to support more options
+                    Text("Select Analysis Type")
                         .font(.headline)
                         .padding(.top)
                     
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(RankingCriteria.allCases, id: \.self) { criteria in
-                                CriteriaButton(
-                                    title: criteria.title,
-                                    icon: criteria.icon,
+                    // Primary criteria (Most popular)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Popular Options")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach([RankingCriteria.best, .balanced], id: \.self) { criteria in
+                                CriteriaCard(
+                                    criteria: criteria,
+                                    isSelected: selectedCriteria == criteria
+                                ) {
+                                    selectedCriteria = criteria
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // Advanced criteria
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Advanced Analysis")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach([RankingCriteria.profileOrder, .conversationStarters, .broadAppeal, .authenticity], id: \.self) { criteria in
+                                CriteriaCard(
+                                    criteria: criteria,
                                     isSelected: selectedCriteria == criteria
                                 ) {
                                     selectedCriteria = criteria
@@ -175,18 +208,17 @@ struct ContentView: View {
                             .padding(.horizontal)
                     }
                     
-                    // Ranked photos - Single column layout
+                    // Ranked photos - Updated header for new criteria
                     if !rankedPhotos.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
-                                Text(selectedCriteria == .balanced ? "Your Balanced Profile Selection" : "Your Top Photos")
+                                Text(getResultsTitle())
                                     .font(.headline)
                                 
                                 Spacer()
                                 
                                 Button(action: {
-                                    print("Clear Results button tapped") // Debug print
-                                    // Force update on main thread
+                                    print("Clear Results button tapped")
                                     DispatchQueue.main.async {
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             rankedPhotos.removeAll()
@@ -206,21 +238,15 @@ struct ContentView: View {
                             }
                             .padding(.horizontal)
                             
-                            // Balanced set explanation
-                            if selectedCriteria == .balanced {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Perfect Mix for Dating Success")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                    
-                                    Text("We selected \(rankedPhotos.count) photos to give you the ideal combination: social connection, personality showcase, and activity highlights. Each photo serves a specific purpose in creating a well-rounded, appealing profile.")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
-                                .padding(.horizontal)
+                            // Criteria-specific explanation
+                            if let explanation = getCriteriaExplanation() {
+                                Text(explanation)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding()
+                                    .background(getCriteriaColor().opacity(0.1))
+                                    .cornerRadius(8)
+                                    .padding(.horizontal)
                             }
                             
                             // Single column of photo cards
@@ -254,14 +280,13 @@ struct ContentView: View {
                 Group {
                     if isProcessing {
                         ProcessingOverlay(
-                            message: "Processing your photos...",
+                            message: getProcessingMessage(),
                             progress: nil
                         )
                     }
                 }
             )
             .onAppear {
-                // Load user credits when view appears
                 Task {
                     await pricingManager.loadUserCredits()
                 }
@@ -269,13 +294,14 @@ struct ContentView: View {
         }
     }
     
-    // Helper functions
+    // MARK: - Helper Functions
+    
     private func getButtonText() -> String {
         let photoCount = selectedImages.count
         if photoCount == 0 {
             return "Select Photos First"
         } else if pricingManager.canAnalyzePhotos(count: photoCount) {
-            return "Rank \(photoCount) Photo\(photoCount == 1 ? "" : "s")"
+            return "Analyze \(photoCount) Photo\(photoCount == 1 ? "" : "s")"
         } else {
             return "Need More Credits (\(photoCount) required)"
         }
@@ -292,10 +318,72 @@ struct ContentView: View {
         }
     }
     
+    private func getResultsTitle() -> String {
+        switch selectedCriteria {
+        case .best:
+            return "Your Top Photos"
+        case .balanced:
+            return "Your Balanced Profile Selection"
+        case .profileOrder:
+            return "Profile Order Recommendations"
+        case .conversationStarters:
+            return "Conversation Starter Photos"
+        case .broadAppeal:
+            return "Appeal Analysis Results"
+        case .authenticity:
+            return "Authenticity Assessment"
+        default:
+            return "Analysis Results"
+        }
+    }
+    
+    private func getCriteriaExplanation() -> String? {
+        switch selectedCriteria {
+        case .balanced:
+            return "Perfect mix for dating success: We selected \(rankedPhotos.count) photos to give you the ideal combination of social connection, personality showcase, and activity highlights."
+        case .profileOrder:
+            return "Optimal positioning: Photos ranked by where they should appear in your dating profile, from main photo to supporting images."
+        case .conversationStarters:
+            return "Message magnets: These photos give others specific things to ask you about, making it easier for matches to start conversations."
+        case .broadAppeal:
+            return "Appeal strategy: Understanding which photos attract the widest audience vs those that appeal to specific types of people."
+        case .authenticity:
+            return "Genuine connection: Photos ranked by how natural and authentic they appear, prioritizing genuine moments over posed shots."
+        default:
+            return nil
+        }
+    }
+    
+    private func getCriteriaColor() -> Color {
+        switch selectedCriteria {
+        case .best: return .yellow
+        case .balanced: return .blue
+        case .profileOrder: return .purple
+        case .conversationStarters: return .green
+        case .broadAppeal: return .orange
+        case .authenticity: return .pink
+        default: return .blue
+        }
+    }
+    
+    private func getProcessingMessage() -> String {
+        switch selectedCriteria {
+        case .profileOrder:
+            return "Analyzing photo positioning..."
+        case .conversationStarters:
+            return "Finding conversation elements..."
+        case .broadAppeal:
+            return "Evaluating demographic appeal..."
+        case .authenticity:
+            return "Assessing authenticity..."
+        default:
+            return "Processing your photos..."
+        }
+    }
+    
     func rankPhotos() {
         let photoCount = selectedImages.count
         
-        // Check if user has enough credits
         guard pricingManager.canAnalyzePhotos(count: photoCount) else {
             showingPricingView = true
             return
@@ -305,7 +393,6 @@ struct ContentView: View {
         errorMessage = nil
         rankedPhotos = []
         
-        // Call the PhotoProcessor to rank the photos
         PhotoProcessor.shared.rankPhotos(
             images: selectedImages,
             criteria: selectedCriteria
@@ -316,7 +403,6 @@ struct ContentView: View {
                 switch result {
                 case .success(let rankedPhotos):
                     self.rankedPhotos = rankedPhotos
-                    // Deduct credits after successful analysis
                     self.pricingManager.deductCredits(count: photoCount)
                 case .failure(let error):
                     if error.localizedDescription.contains("Insufficient credits") {
@@ -334,5 +420,42 @@ struct ContentView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - New CriteriaCard Component
+struct CriteriaCard: View {
+    let criteria: RankingCriteria
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: criteria.icon)
+                    .font(.title2)
+                    .foregroundColor(isSelected ? .white : .blue)
+                
+                Text(criteria.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
