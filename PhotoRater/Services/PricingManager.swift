@@ -1,5 +1,5 @@
 // PricingManager.swift
-// Fixed version with proper StoreKit error handling
+// Production version with debug overrides removed
 
 import Foundation
 import StoreKit
@@ -97,14 +97,11 @@ class PricingManager: ObservableObject {
         let now = Date()
         let isActive = now >= launchDate && now < promotionEnd
         
-        #if DEBUG
-        print("📅 Launch Promotion Debug (2 weeks):")
+        print("📅 Launch Promotion Check:")
         print("   Launch Date: \(launchDate)")
         print("   End Date: \(promotionEnd)")
         print("   Current Date: \(now)")
         print("   Is Active: \(isActive)")
-        print("   Days remaining: \(max(0, Calendar.current.dateComponents([.day], from: now, to: promotionEnd).day ?? 0))")
-        #endif
         
         return isActive
     }
@@ -128,19 +125,10 @@ class PricingManager: ObservableObject {
     // MARK: - Public Methods
     
     func canAnalyzePhotos(count: Int) -> Bool {
-        #if DEBUG
-        return true // Always allow analysis in debug builds
-        #endif
-        
         return isUnlimited || userCredits >= count
     }
     
     func deductCredits(count: Int) {
-        #if DEBUG
-        print("🔧 DEBUG: Would deduct \(count) credits (not actually deducting in debug mode)")
-        return
-        #endif
-        
         if !isUnlimited {
             userCredits = max(0, userCredits - count)
             Task {
@@ -185,16 +173,6 @@ class PricingManager: ObservableObject {
     }
     
     func loadUserCredits() async {
-        #if DEBUG
-        await MainActor.run {
-            self.userCredits = 999
-            self.isUnlimited = false
-            self.isInitialized = true
-            print("🔧 DEBUG: Initialized with 999 credits for testing")
-        }
-        return
-        #endif
-        
         guard let userId = Auth.auth().currentUser?.uid else {
             print("No authenticated user, waiting...")
             return
@@ -292,11 +270,6 @@ class PricingManager: ObservableObject {
     }
     
     private func saveCreditsToFirebase() async {
-        #if DEBUG
-        print("🔧 DEBUG: Would save credits to Firebase (skipping in debug mode)")
-        return
-        #endif
-        
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()

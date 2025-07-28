@@ -1,5 +1,5 @@
 // PromoCodeView.swift
-// Complete rewrite with better UX and error handling
+// Fixed version that resolves all compilation errors
 
 import SwiftUI
 import FirebaseAuth
@@ -27,11 +27,6 @@ struct PromoCodeView: View {
                     
                     // Info Section
                     infoSection
-                    
-                    // Debug Section (Development only)
-                    #if DEBUG
-                    debugSection
-                    #endif
                     
                     Spacer(minLength: 40)
                 }
@@ -230,50 +225,6 @@ struct PromoCodeView: View {
         }
         .padding(.vertical)
     }
-    
-    #if DEBUG
-    private var debugSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "wrench.fill")
-                    .foregroundColor(.orange)
-                
-                Text("🔧 Development Codes")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.orange)
-            }
-            
-            Text("Tap any code below to auto-fill:")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            let testCodes = ["APPSTORE2025", "REVIEWER", "LAUNCH50", "TESTFLIGHT", "UNLIMITED"]
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 8) {
-                ForEach(testCodes, id: \.self) { code in
-                    Button(code) {
-                        promoCode = code
-                        hideKeyboard()
-                    }
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.orange.opacity(0.1))
-                    .foregroundColor(.orange)
-                    .cornerRadius(8)
-                }
-            }
-        }
-        .padding()
-        .background(Color.orange.opacity(0.05))
-        .cornerRadius(12)
-    }
-    #endif
     
     // MARK: - Computed Properties
     

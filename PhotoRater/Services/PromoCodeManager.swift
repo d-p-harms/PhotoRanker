@@ -1,5 +1,5 @@
 // PromoCodeManager.swift
-// Complete rewrite with proper error handling and Firestore transactions
+// Production version with debug section removed from view
 
 import Foundation
 import FirebaseFirestore
