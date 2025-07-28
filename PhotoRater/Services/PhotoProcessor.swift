@@ -334,8 +334,109 @@ class PhotoProcessor: ObservableObject {
             }
             
             print("Successfully created \(rankedPhotos.count) ranked photos")
-            completion(.success(rankedPhotos))
+            
+            // Apply balanced selection if criteria is .balanced
+            if criteria == .balanced {
+                let balancedPhotos = self.createBalancedSelection(from: rankedPhotos, targetCount: 6)
+                completion(.success(balancedPhotos))
+            } else {
+                completion(.success(rankedPhotos))
+            }
         }
+    }
+    
+    // MARK: - Balanced Selection Logic
+    
+    private func createBalancedSelection(from rankedPhotos: [RankedPhoto], targetCount: Int = 6) -> [RankedPhoto] {
+        // Define ideal distribution for a balanced dating profile
+        let targetDistribution: [String: Int] = [
+            "social": 2,      // 2 social photos max
+            "activity": 2,    // 2 activity photos max
+            "personality": 2, // 2 personality photos max
+            "general": 2      // 2 general/other photos max
+        ]
+        
+        var selected: [RankedPhoto] = []
+        var categoryCount: [String: Int] = [:]
+        
+        // First pass: Select highest scoring photo from each major category
+        let sortedPhotos = rankedPhotos.sorted { $0.score > $1.score }
+        
+        print("Creating balanced selection from \(rankedPhotos.count) photos...")
+        
+        for photo in sortedPhotos {
+            if selected.count >= targetCount { break }
+            
+            let photoCategories = getPhotoCategories(photo)
+            var canAdd = false
+            var addReason = ""
+            
+            // Check if we need this category type
+            for category in photoCategories {
+                let currentCount = categoryCount[category, default: 0]
+                let maxForCategory = targetDistribution[category, default: 1]
+                
+                if currentCount < maxForCategory {
+                    canAdd = true
+                    addReason = "Fills \(category) spot (\(currentCount + 1)/\(maxForCategory)) in your balanced profile"
+                    categoryCount[category] = currentCount + 1
+                    break
+                }
+            }
+            
+            if canAdd {
+                // Add balance explanation to the photo
+                let originalReason = photo.reason ?? "Good quality photo"
+                let updatedReason = "\(originalReason)\n\n🎯 Balance: \(addReason)"
+                let balancedPhoto = photo.withUpdatedReason(updatedReason)
+                selected.append(balancedPhoto)
+                
+                print("Selected photo for \(photoCategories.first ?? "general") category (score: \(photo.score))")
+            }
+        }
+        
+        // Second pass: Fill remaining slots with highest scoring remaining photos
+        let remaining = sortedPhotos.filter { photo in
+            !selected.contains { $0.id == photo.id }
+        }
+        
+        for photo in remaining {
+            if selected.count >= targetCount { break }
+            
+            let originalReason = photo.reason ?? "Good quality photo"
+            let updatedReason = "\(originalReason)\n\n🎯 Balance: Rounds out your profile variety"
+            let balancedPhoto = photo.withUpdatedReason(updatedReason)
+            selected.append(balancedPhoto)
+            
+            print("Added remaining photo to fill balance (score: \(photo.score))")
+        }
+        
+        print("Final balanced selection: \(selected.count) photos")
+        return selected
+    }
+    
+    private func getPhotoCategories(_ photo: RankedPhoto) -> [String] {
+        var categories: [String] = []
+        
+        if let tags = photo.tags {
+            for tag in tags {
+                switch tag {
+                case .social:
+                    categories.append("social")
+                case .activity:
+                    categories.append("activity")
+                case .personality:
+                    categories.append("personality")
+                }
+            }
+        }
+        
+        // If no specific categories, it's a general photo
+        if categories.isEmpty {
+            categories.append("general")
+        }
+        
+        return categories
     }
 }
 

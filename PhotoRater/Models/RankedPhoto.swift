@@ -1,4 +1,3 @@
-
 import Foundation
 import UIKit
 
@@ -63,6 +62,24 @@ struct RankedPhoto: Identifiable {
         self.improvements = improvements
         self.strengths = strengths
         self.nextPhotoSuggestions = nextPhotoSuggestions
+    }
+    
+    // Helper method to create a copy with updated reason
+    func withUpdatedReason(_ newReason: String) -> RankedPhoto {
+        return RankedPhoto(
+            id: self.id,
+            fileName: self.fileName,
+            storageURL: self.storageURL ?? "",
+            score: self.score,
+            tags: self.tags ?? [],
+            reason: newReason,
+            detailedScores: self.detailedScores,
+            technicalFeedback: self.technicalFeedback,
+            datingInsights: self.datingInsights,
+            improvements: self.improvements,
+            strengths: self.strengths,
+            nextPhotoSuggestions: self.nextPhotoSuggestions
+        )
     }
 }
 

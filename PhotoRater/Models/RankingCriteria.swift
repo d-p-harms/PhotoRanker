@@ -44,7 +44,7 @@ enum RankingCriteria: String, CaseIterable {
         case .personality:
             return "Prioritizes photos that highlight your unique personality traits."
         case .balanced:
-            return "Creates a diverse selection with different types of photos for a well-rounded profile."
+            return "Creates a diverse selection with 2 social photos, 2 activity photos, and 2 personality photos for a well-rounded dating profile that appeals to different people."
         }
     }
 }

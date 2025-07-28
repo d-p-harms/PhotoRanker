@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PhotoRater
 //
-//  Alternative clear button placements
+//  Fixed version with proper loading states and working clear button
 //
 
 import SwiftUI
@@ -75,40 +75,22 @@ struct ContentView: View {
                         }
                     }
                     
-                    // Photo picker button with clear option
-                    VStack(spacing: 12) {
-                        Button(action: {
-                            showingImagePicker = true
-                        }) {
-                            VStack {
-                                Image(systemName: "photo.on.rectangle")
-                                    .font(.largeTitle)
-                                    .padding()
-                                
-                                Text(selectedImages.isEmpty ? "Upload Photos" : "\(selectedImages.count) Photos Selected")
-                                    .fontWeight(.medium)
-                            }
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                    // Photo picker button
+                    Button(action: {
+                        showingImagePicker = true
+                    }) {
+                        VStack {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.largeTitle)
+                                .padding()
+                            
+                            Text(selectedImages.isEmpty ? "Upload Photos" : "\(selectedImages.count) Photos Selected")
+                                .fontWeight(.medium)
                         }
-                        
-                        // Clear Results button
-                        if !selectedImages.isEmpty || !rankedPhotos.isEmpty {
-                            Button(action: clearAll) {
-                                HStack {
-                                    Image(systemName: "trash")
-                                    Text("Clear Results")
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.red)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.red.opacity(0.1))
-                                .cornerRadius(8)
-                            }
-                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
                     }
                     .padding(.horizontal)
                     
@@ -193,13 +175,53 @@ struct ContentView: View {
                             .padding(.horizontal)
                     }
                     
-                    // Ranked photos
+                    // Ranked photos - Single column layout
                     if !rankedPhotos.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
-                            // Results header
-                            Text("Your Top Photos")
-                                .font(.headline)
+                            HStack {
+                                Text(selectedCriteria == .balanced ? "Your Balanced Profile Selection" : "Your Top Photos")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    print("Clear Results button tapped") // Debug print
+                                    // Force update on main thread
+                                    DispatchQueue.main.async {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            rankedPhotos.removeAll()
+                                        }
+                                        selectedImages.removeAll()
+                                        errorMessage = nil
+                                    }
+                                }) {
+                                    Text("Clear Results")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            // Balanced set explanation
+                            if selectedCriteria == .balanced {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Perfect Mix for Dating Success")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    
+                                    Text("We selected \(rankedPhotos.count) photos to give you the ideal combination: social connection, personality showcase, and activity highlights. Each photo serves a specific purpose in creating a well-rounded, appealing profile.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
                                 .padding(.horizontal)
+                            }
                             
                             // Single column of photo cards
                             VStack(spacing: 16) {
@@ -208,22 +230,6 @@ struct ContentView: View {
                                         .padding(.horizontal)
                                 }
                             }
-                            
-                            // OPTION 3: Clear button at bottom of results
-                            Button(action: clearAll) {
-                                HStack {
-                                    Image(systemName: "arrow.clockwise")
-                                    Text("Start Over")
-                                }
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(10)
-                            }
-                            .padding(.horizontal)
-                            .padding(.top, 8)
                         }
                         .padding(.bottom, 20)
                     }
@@ -260,16 +266,6 @@ struct ContentView: View {
                     await pricingManager.loadUserCredits()
                 }
             }
-        }
-    }
-    
-    // SIMPLIFIED CLEAR FUNCTION
-    private func clearAll() {
-        print("Clear All button tapped") // Debug print
-        withAnimation(.easeInOut(duration: 0.3)) {
-            rankedPhotos = []
-            selectedImages = []
-            errorMessage = nil
         }
     }
     
