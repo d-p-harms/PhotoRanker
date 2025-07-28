@@ -246,7 +246,7 @@ struct ContentView: View {
                             .padding(.horizontal)
                     }
                     
-                    // Ranked photos - Updated header for new criteria
+                    // Ranked photos - Updated header for new criteria (Clear Results button removed)
                     if !rankedPhotos.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
@@ -254,25 +254,6 @@ struct ContentView: View {
                                     .font(.headline)
                                 
                                 Spacer()
-                                
-                                Button(action: {
-                                    print("Clear Results button tapped")
-                                    DispatchQueue.main.async {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            rankedPhotos.removeAll()
-                                        }
-                                        selectedImages.removeAll()
-                                        errorMessage = nil
-                                    }
-                                }) {
-                                    Text("Clear Results")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(6)
-                                }
                             }
                             .padding(.horizontal)
                             
