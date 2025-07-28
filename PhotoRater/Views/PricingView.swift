@@ -1,5 +1,5 @@
 // PricingView.swift
-// Updated to work with StoreKit 2 APIs
+// Updated to work with StoreKit 2 APIs and new pricing
 
 import SwiftUI
 import StoreKit
@@ -27,9 +27,9 @@ struct PricingView: View {
                     }
                     .padding(.top)
                     
-                    // Current credits display
+                    // Current credits display with 2-week promo info
                     if pricingManager.userCredits > 0 {
-                        VStack {
+                        VStack(spacing: 8) {
                             Text("You have \(pricingManager.userCredits) credits remaining")
                                 .font(.subheadline)
                                 .foregroundColor(.blue)
@@ -37,9 +37,24 @@ struct PricingView: View {
                                 .padding(.vertical, 8)
                                 .background(Color.blue.opacity(0.1))
                                 .cornerRadius(8)
+                            
+                            // Show launch promo status
+                            if isLaunchPeriod {
+                                Text("🎉 Launch Special Active: New users get 15 free analyses!")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(6)
+                                
+                                Text("Ends August 24, 2025")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     } else {
-                        VStack {
+                        VStack(spacing: 8) {
                             Text("⚡ You're out of credits!")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
@@ -48,6 +63,17 @@ struct PricingView: View {
                                 .padding(.vertical, 8)
                                 .background(Color.orange.opacity(0.1))
                                 .cornerRadius(8)
+                            
+                            if isLaunchPeriod {
+                                Text("🎉 New users get 15 free analyses during our launch special!")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
                         }
                     }
                     
@@ -133,6 +159,43 @@ struct PricingView: View {
                     }
                     .padding(.horizontal)
                     
+                    // Launch special callout
+                    if isLaunchPeriod {
+                        VStack(spacing: 8) {
+                            Text("🚀 Launch Special")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.green)
+                            
+                            Text("New users get 15 FREE analyses!")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Perfect for testing all our AI analysis features")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Ends August 24, 2025")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.orange)
+                        }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.green.opacity(0.1), Color.blue.opacity(0.1)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.green, lineWidth: 2)
+                        )
+                        .padding(.horizontal)
+                    }
+                    
                     // Social proof
                     VStack(spacing: 8) {
                         HStack {
@@ -167,6 +230,12 @@ struct PricingView: View {
                 }
             )
         }
+    }
+    
+    private var isLaunchPeriod: Bool {
+        let launchDate = Calendar.current.date(from: DateComponents(year: 2025, month: 8, day: 10))!
+        let promotionEnd = Calendar.current.date(byAdding: .day, value: 14, to: launchDate)!
+        return Date() >= launchDate && Date() < promotionEnd
     }
     
     private func purchaseSelected() {
@@ -240,13 +309,13 @@ struct ProductCard: View {
                     }
                 }
                 
-                // Value comparison
+                // Value comparison for best value pack
                 if productID == .value {
                     HStack {
                         Text("vs Starter pack:")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                        Text("Save $2.00+ per photo!")
+                        Text("Save $0.008 per photo!")
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundColor(.green)

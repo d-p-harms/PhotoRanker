@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PhotoRater
 //
-//  Updated with new ranking criteria support
+//  Updated with new pricing and 2-week launch promotion display
 //
 
 import SwiftUI
@@ -36,29 +36,54 @@ struct ContentView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         
-                        // Credits display with loading state
+                        // Credits display with loading state and launch promo info
                         if pricingManager.isInitialized {
-                            HStack {
-                                Image(systemName: "bolt.fill")
+                            VStack(spacing: 6) {
+                                HStack {
+                                    Image(systemName: "bolt.fill")
+                                        .foregroundColor(creditsColor)
+                                    
+                                    Text("\(pricingManager.userCredits) credits")
+                                        .fontWeight(.medium)
+                                        .foregroundColor(creditsColor)
+                                    
+                                    Button("Get More") {
+                                        showingPricingView = true
+                                    }
+                                    .font(.caption)
                                     .foregroundColor(.blue)
-                                Text("\(pricingManager.userCredits) credits")
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.blue)
-                                
-                                Button("Get More") {
-                                    showingPricingView = true
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
                                 }
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(creditsColor.opacity(0.05))
+                                .cornerRadius(10)
+                                
+                                // Launch promotion indicator
+                                if isLaunchPeriod {
+                                    HStack {
+                                        Image(systemName: "gift.fill")
+                                            .foregroundColor(.green)
+                                            .font(.caption)
+                                        
+                                        Text("Launch Special: New users get 15 free analyses!")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.green)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(8)
+                                    
+                                    Text("Ends August 24, 2025")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.blue.opacity(0.05))
-                            .cornerRadius(10)
                         } else {
                             // Loading state
                             HStack {
@@ -294,6 +319,24 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Computed Properties
+    
+    private var creditsColor: Color {
+        if pricingManager.userCredits >= 10 {
+            return .blue
+        } else if pricingManager.userCredits >= 3 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+    
+    private var isLaunchPeriod: Bool {
+        let launchDate = Calendar.current.date(from: DateComponents(year: 2025, month: 8, day: 10))!
+        let promotionEnd = Calendar.current.date(byAdding: .day, value: 14, to: launchDate)!
+        return Date() >= launchDate && Date() < promotionEnd
+    }
+    
     // MARK: - Helper Functions
     
     private func getButtonText() -> String {
@@ -423,7 +466,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - New CriteriaCard Component
+// MARK: - CriteriaCard Component
 struct CriteriaCard: View {
     let criteria: RankingCriteria
     let isSelected: Bool

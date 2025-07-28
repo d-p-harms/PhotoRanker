@@ -1,5 +1,5 @@
 // PricingManager.swift
-// Updated version with debug credit override for immediate testing
+// Updated with new pricing and 2-week launch promotion (15 credits)
 
 import Foundation
 import StoreKit
@@ -17,17 +17,17 @@ class PricingManager: ObservableObject {
     
     private var updateListenerTask: Task<Void, Error>? = nil
     
-    // Pricing tiers
+    // Updated pricing tiers
     enum PricingTier {
-        case free          // 3 photos to try the service
-        case starter       // $0.99 for 50 photos
-        case value         // $4.99 for 350 photos
+        case free          // 15 photos during 2-week launch, 3 after
+        case starter       // $0.99 for 20 photos
+        case value         // $4.99 for 120 photos
         
         var credits: Int {
             switch self {
-            case .free: return 3
-            case .starter: return 50
-            case .value: return 350
+            case .free: return 15  // Launch promo amount
+            case .starter: return 20
+            case .value: return 120
             }
         }
         
@@ -41,7 +41,7 @@ class PricingManager: ObservableObject {
         
         var title: String {
             switch self {
-            case .free: return "Try It Free"
+            case .free: return "Launch Special"
             case .starter: return "Starter Pack"
             case .value: return "Best Value"
             }
@@ -49,31 +49,32 @@ class PricingManager: ObservableObject {
         
         var description: String {
             switch self {
-            case .free: return "Perfect for testing our AI analysis"
-            case .starter: return "Great value for optimizing your profile"
-            case .value: return "Best deal - analyze hundreds of photos"
+            case .free: return "Perfect for trying our AI analysis"
+            case .starter: return "Great for optimizing your profile"
+            case .value: return "Best deal - analyze your entire photo collection"
             }
         }
         
         var costPerPhoto: Double {
             switch self {
             case .free: return 0.00
-            default: return price / Double(credits)
+            case .starter: return 0.0495  // $0.0495 per photo
+            case .value: return 0.0416    // $0.0416 per photo
             }
         }
         
         var savings: String? {
             switch self {
-            case .value: return "Save 30%"
+            case .value: return "Save 16%"
             default: return nil
             }
         }
     }
     
-    // In-App Purchase Product IDs
+    // Updated In-App Purchase Product IDs
     enum ProductID: String, CaseIterable {
-        case starter = "com.photorater.starter50"
-        case value = "com.photorater.value350"
+        case starter = "com.photorater.starter20"
+        case value = "com.photorater.value120"
         
         var tier: PricingTier {
             switch self {
@@ -83,8 +84,31 @@ class PricingManager: ObservableObject {
         }
     }
     
+    // 2-week launch promotion period
+    private var isLaunchPeriod: Bool {
+        let launchDate = Calendar.current.date(from: DateComponents(
+            year: 2025,
+            month: 8,    // August
+            day: 10      // Launch day
+        ))!
+        
+        let promotionEnd = Calendar.current.date(byAdding: .day, value: 14, to: launchDate)! // 2 weeks
+        let now = Date()
+        let isActive = now >= launchDate && now < promotionEnd
+        
+        #if DEBUG
+        print("📅 Launch Promotion Debug (2 weeks):")
+        print("   Launch Date: \(launchDate)")
+        print("   End Date: \(promotionEnd)")
+        print("   Current Date: \(now)")
+        print("   Is Active: \(isActive)")
+        print("   Days remaining: \(max(0, Calendar.current.dateComponents([.day], from: now, to: promotionEnd).day ?? 0))")
+        #endif
+        
+        return isActive
+    }
+    
     private init() {
-        // Start listening for transaction updates
         updateListenerTask = listenForTransactions()
         
         Task {
@@ -130,7 +154,17 @@ class PricingManager: ObservableObject {
     }
     
     func initializeNewUser() {
-        userCredits = PricingTier.free.credits // 3 free photos
+        let launchCredits = isLaunchPeriod ? 15 : 3
+        userCredits = launchCredits
+        
+        print("🎯 Initialized new user with \(userCredits) credits")
+        print("🎁 Launch promotion active: \(isLaunchPeriod)")
+        if isLaunchPeriod {
+            print("🎉 User gets 2-week launch special: 15 free analyses!")
+            let endDate = Calendar.current.date(from: DateComponents(year: 2025, month: 8, day: 24))!
+            print("🗓️ Promotion ends: \(DateFormatter.localizedString(from: endDate, dateStyle: .medium, timeStyle: .none))")
+        }
+        
         Task {
             await saveCreditsToFirebase()
         }
@@ -138,7 +172,6 @@ class PricingManager: ObservableObject {
     
     func loadUserCredits() async {
         #if DEBUG
-        // Give unlimited credits in debug mode for testing
         await MainActor.run {
             self.userCredits = 999
             self.isInitialized = true
@@ -148,7 +181,6 @@ class PricingManager: ObservableObject {
         #endif
         
         guard let userId = Auth.auth().currentUser?.uid else {
-            // If no user, wait for authentication then try again
             print("No authenticated user, waiting...")
             return
         }
@@ -160,22 +192,17 @@ class PricingManager: ObservableObject {
             
             await MainActor.run {
                 if let data = document.data() {
-                    self.userCredits = data["credits"] as? Int ?? 3
+                    self.userCredits = data["credits"] as? Int ?? (isLaunchPeriod ? 15 : 3)
                     print("Loaded user credits: \(self.userCredits)")
                 } else {
-                    // New user - initialize with free credits
-                    print("New user detected, initializing with free credits")
-                    self.userCredits = PricingTier.free.credits
-                    Task {
-                        await self.saveCreditsToFirebase()
-                    }
+                    print("New user detected, initializing with \(isLaunchPeriod ? 15 : 3) credits")
+                    self.initializeNewUser()
                 }
             }
         } catch {
             await MainActor.run {
                 print("Error loading credits: \(error.localizedDescription)")
-                // Default to free credits on error
-                self.userCredits = 3
+                self.userCredits = isLaunchPeriod ? 15 : 3
             }
         }
     }
@@ -226,7 +253,6 @@ class PricingManager: ObservableObject {
             
             await MainActor.run {
                 self.products = loadedProducts.sorted { product1, product2 in
-                    // Sort by price (starter first, then value)
                     return product1.price < product2.price
                 }
                 
@@ -264,17 +290,14 @@ class PricingManager: ObservableObject {
     
     private func listenForTransactions() -> Task<Void, Error> {
         return Task {
-            // Listen for transaction updates using StoreKit.Transaction
             for await result in StoreKit.Transaction.updates {
                 do {
                     let transaction = try checkVerified(result)
                     
-                    // Handle the transaction
                     if let productID = ProductID(rawValue: transaction.productID) {
                         await handleSuccessfulPurchase(transaction, productID: productID)
                     }
                     
-                    // Finish the transaction
                     await transaction.finish()
                 } catch {
                     print("Transaction verification failed: \(error)")
@@ -287,23 +310,18 @@ class PricingManager: ObservableObject {
         let creditsToAdd = productID.tier.credits
         
         await MainActor.run {
-            // Update credits directly here to avoid nested async calls
             self.userCredits += creditsToAdd
             print("Purchase successful: Added \(creditsToAdd) credits")
         }
         
-        // Save to Firebase separately
         await saveCreditsToFirebase()
     }
     
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        // Check whether the JWS passes StoreKit verification
         switch result {
         case .unverified:
-            // StoreKit parses the JWS, but it fails verification
             throw StoreKitError.failedVerification
         case .verified(let safe):
-            // The result is verified. Return the unwrapped value
             return safe
         }
     }
