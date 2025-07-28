@@ -103,10 +103,6 @@ struct PromoCodeView: View {
                             redeemCode()
                         }
                     }
-                
-                Text("Format: K9X7M3P8Q2W5 (12 characters, letters and numbers)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
             
             // Redeem Button
@@ -194,12 +190,7 @@ struct PromoCodeView: View {
             }
             
             VStack(spacing: 16) {
-                InfoRow(
-                    icon: "infinity",
-                    iconColor: .green,
-                    title: "Unlimited Access",
-                    description: "Get unlimited photo analysis for 2 years"
-                )
+                
                 
                 InfoRow(
                     icon: "shield.fill",

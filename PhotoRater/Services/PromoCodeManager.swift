@@ -22,7 +22,7 @@ class PromoCodeManager: ObservableObject {
             description: "Unlimited Access",
             isUnlimited: true,
             expirationDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
-            maxUses: 1000
+            maxUses: 10
         )
     ]
     
