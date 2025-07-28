@@ -33,24 +33,14 @@ struct PhotoResultCard: View {
             }
             
             // Info section - No numerical scores shown
-            VStack(alignment: .leading, spacing: 8) {
-                // Quality indicators instead of detailed scores
+            VStack(alignment: .leading, spacing: 12) {
+                // Quality indicators row
                 HStack(spacing: 8) {
                     QualityChip(title: "Visual", quality: getQualityLevel(rankedPhoto.detailedScores?.visualQuality ?? rankedPhoto.score), color: .blue)
                     QualityChip(title: "Appeal", quality: getQualityLevel(rankedPhoto.detailedScores?.attractiveness ?? rankedPhoto.score), color: .pink)
                     QualityChip(title: "Profile Fit", quality: getQualityLevel(rankedPhoto.detailedScores?.swipeWorthiness ?? rankedPhoto.score), color: .green)
                     
                     Spacer()
-                    
-                    Button("Details") {
-                        showingDetailView = true
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(4)
                 }
                 
                 // Tags
@@ -87,6 +77,35 @@ struct PhotoResultCard: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                
+                // IMPROVED DETAILS BUTTON - Much more prominent and reliable
+                Button(action: {
+                    showingDetailView = true
+                }) {
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .font(.subheadline)
+                        Text("View Detailed Analysis")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(PlainButtonStyle()) // Ensures reliable tapping
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
