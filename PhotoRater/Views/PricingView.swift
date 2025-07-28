@@ -1,5 +1,5 @@
 // PricingView.swift
-// Updated to work with StoreKit 2 APIs and new pricing
+// Updated to work with StoreKit 2 APIs, new pricing, and promo codes
 
 import SwiftUI
 import StoreKit
@@ -8,6 +8,7 @@ struct PricingView: View {
     @StateObject private var pricingManager = PricingManager.shared
     @Environment(\.presentationMode) var presentationMode
     @State private var selectedProductID: PricingManager.ProductID = .starter
+    @State private var showingPromoCodeView = false
     
     var body: some View {
         NavigationView {
@@ -28,18 +29,23 @@ struct PricingView: View {
                     .padding(.top)
                     
                     // Current credits display with 2-week promo info
-                    if pricingManager.userCredits > 0 {
+                    if pricingManager.userCredits > 0 || pricingManager.isUnlimited {
                         VStack(spacing: 8) {
-                            Text("You have \(pricingManager.userCredits) credits remaining")
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
+                            HStack {
+                                Image(systemName: pricingManager.isUnlimited ? "infinity" : "bolt.fill")
+                                    .foregroundColor(pricingManager.isUnlimited ? .green : .blue)
+                                
+                                Text(pricingManager.isUnlimited ? "You have unlimited credits!" : "You have \(pricingManager.userCredits) credits remaining")
+                                    .font(.subheadline)
+                                    .foregroundColor(pricingManager.isUnlimited ? .green : .blue)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background((pricingManager.isUnlimited ? Color.green : Color.blue).opacity(0.1))
+                            .cornerRadius(8)
                             
                             // Show launch promo status
-                            if isLaunchPeriod {
+                            if isLaunchPeriod && !pricingManager.isUnlimited {
                                 Text("🎉 Launch Special Active: New users get 15 free analyses!")
                                     .font(.caption)
                                     .foregroundColor(.green)
@@ -133,14 +139,22 @@ struct PricingView: View {
                     .disabled(pricingManager.isLoading || pricingManager.products.isEmpty)
                     .padding(.horizontal)
                     
-                    // Restore purchases button
-                    Button("Restore Purchases") {
-                        Task {
-                            await pricingManager.restorePurchases()
+                    // Restore purchases and promo code buttons
+                    HStack(spacing: 20) {
+                        Button("Restore Purchases") {
+                            Task {
+                                await pricingManager.restorePurchases()
+                            }
                         }
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                        
+                        Button("Have a Promo Code?") {
+                            showingPromoCodeView = true
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.green)
                     }
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
                     
                     // Value demonstration
                     VStack(alignment: .leading, spacing: 12) {
@@ -229,6 +243,9 @@ struct PricingView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
             )
+            .sheet(isPresented: $showingPromoCodeView) {
+                PromoCodeView()
+            }
         }
     }
     

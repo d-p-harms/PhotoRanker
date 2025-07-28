@@ -19,6 +19,8 @@
 		AB65586C2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586E2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
+		AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */; };
+		AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
 		AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A62DB191900005A7DC /* AppDelegate.swift */; };
 		AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */; };
@@ -119,6 +121,8 @@
 		AB496BFF2DDF0A0300B87CA6 /* StoreKit.frameworkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StoreKit.frameworkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB496C162DDF0C9A00B87CA6 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		AB65586B2DB388D100113CFF /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
+		AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeManager.swift; sourceTree = "<group>"; };
+		AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeView.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB80327D2DB18F4A0005A7DC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB8032882DB18F4C0005A7DC /* PhotoRaterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoRaterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -293,8 +297,9 @@
 		AB8032BD2DB33CCF0005A7DC /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
 				AB80327D2DB18F4A0005A7DC /* ContentView.swift */,
+				AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
+				AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
 				AB8032BE2DB33CE70005A7DC /* Components */,
 			);
 			path = Views;
@@ -317,6 +322,7 @@
 			children = (
 				AB496BED2DDF083400B87CA6 /* PricingManager.swift */,
 				AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */,
+				AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -597,6 +603,7 @@
 			files = (
 				AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
 				AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
+				AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */,
 				AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */,
 				AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */,
 				AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */,
@@ -608,6 +615,7 @@
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
+				AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
 				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,

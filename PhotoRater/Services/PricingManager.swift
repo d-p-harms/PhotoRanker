@@ -1,5 +1,5 @@
 // PricingManager.swift
-// Updated with new pricing and 2-week launch promotion (15 credits)
+// Fixed version with proper StoreKit error handling
 
 import Foundation
 import StoreKit
@@ -11,6 +11,7 @@ class PricingManager: ObservableObject {
     static let shared = PricingManager()
     
     @Published var userCredits: Int = 0
+    @Published var isUnlimited: Bool = false
     @Published var isLoading = false
     @Published var products: [Product] = []
     @Published var isInitialized = false
@@ -131,7 +132,7 @@ class PricingManager: ObservableObject {
         return true // Always allow analysis in debug builds
         #endif
         
-        return userCredits >= count
+        return isUnlimited || userCredits >= count
     }
     
     func deductCredits(count: Int) {
@@ -140,9 +141,11 @@ class PricingManager: ObservableObject {
         return
         #endif
         
-        userCredits = max(0, userCredits - count)
-        Task {
-            await saveCreditsToFirebase()
+        if !isUnlimited {
+            userCredits = max(0, userCredits - count)
+            Task {
+                await saveCreditsToFirebase()
+            }
         }
     }
     
@@ -153,9 +156,20 @@ class PricingManager: ObservableObject {
         }
     }
     
+    func setUnlimitedAccess(until date: Date? = nil) {
+        isUnlimited = true
+        if userCredits < 999 {
+            userCredits = 999 // Show high number for unlimited
+        }
+        Task {
+            await saveCreditsToFirebase()
+        }
+    }
+    
     func initializeNewUser() {
         let launchCredits = isLaunchPeriod ? 15 : 3
         userCredits = launchCredits
+        isUnlimited = false
         
         print("🎯 Initialized new user with \(userCredits) credits")
         print("🎁 Launch promotion active: \(isLaunchPeriod)")
@@ -174,6 +188,7 @@ class PricingManager: ObservableObject {
         #if DEBUG
         await MainActor.run {
             self.userCredits = 999
+            self.isUnlimited = false
             self.isInitialized = true
             print("🔧 DEBUG: Initialized with 999 credits for testing")
         }
@@ -193,7 +208,16 @@ class PricingManager: ObservableObject {
             await MainActor.run {
                 if let data = document.data() {
                     self.userCredits = data["credits"] as? Int ?? (isLaunchPeriod ? 15 : 3)
-                    print("Loaded user credits: \(self.userCredits)")
+                    self.isUnlimited = data["isUnlimited"] as? Bool ?? false
+                    
+                    // Check if unlimited access has expired
+                    if self.isUnlimited, let unlimitedUntil = data["unlimitedUntil"] as? Timestamp {
+                        if unlimitedUntil.dateValue() < Date() {
+                            self.isUnlimited = false
+                        }
+                    }
+                    
+                    print("Loaded user credits: \(self.userCredits), unlimited: \(self.isUnlimited)")
                 } else {
                     print("New user detected, initializing with \(isLaunchPeriod ? 15 : 3) credits")
                     self.initializeNewUser()
@@ -203,6 +227,7 @@ class PricingManager: ObservableObject {
             await MainActor.run {
                 print("Error loading credits: \(error.localizedDescription)")
                 self.userCredits = isLaunchPeriod ? 15 : 3
+                self.isUnlimited = false
             }
         }
     }
@@ -277,12 +302,21 @@ class PricingManager: ObservableObject {
         let db = Firestore.firestore()
         
         do {
-            try await db.collection("users").document(userId).setData([
+            var updateData: [String: Any] = [
                 "credits": userCredits,
+                "isUnlimited": isUnlimited,
                 "lastUpdated": FieldValue.serverTimestamp()
-            ], merge: true)
+            ]
             
-            print("Credits saved successfully: \(self.userCredits)")
+            // If unlimited, set expiration date (optional)
+            if isUnlimited {
+                let expirationDate = Calendar.current.date(byAdding: .year, value: 1, to: Date())!
+                updateData["unlimitedUntil"] = Timestamp(date: expirationDate)
+            }
+            
+            try await db.collection("users").document(userId).setData(updateData, merge: true)
+            
+            print("Credits saved successfully: \(self.userCredits), unlimited: \(self.isUnlimited)")
         } catch {
             print("Error saving credits: \(error)")
         }
@@ -320,7 +354,7 @@ class PricingManager: ObservableObject {
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
-            throw StoreKitError.failedVerification
+            throw PhotoRaterError.storeKitVerificationFailed
         case .verified(let safe):
             return safe
         }
@@ -338,7 +372,20 @@ class PricingManager: ObservableObject {
     }
 }
 
-// Custom StoreKit error for verification failures
-enum StoreKitError: Error {
-    case failedVerification
+// Custom error types for the app
+enum PhotoRaterError: Error, LocalizedError {
+    case storeKitVerificationFailed
+    case insufficientCredits
+    case networkError
+    
+    var errorDescription: String? {
+        switch self {
+        case .storeKitVerificationFailed:
+            return "Purchase verification failed"
+        case .insufficientCredits:
+            return "Insufficient credits"
+        case .networkError:
+            return "Network connection error"
+        }
+    }
 }

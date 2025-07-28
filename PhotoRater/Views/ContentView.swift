@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  PhotoRater
 //
-//  Updated with new pricing and 2-week launch promotion display
+//  Updated with promo code support and 2-week launch promotion display
 //
 
 import SwiftUI
@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var isProcessing = false
     @State private var showingImagePicker = false
     @State private var showingPricingView = false
+    @State private var showingPromoCodeView = false
     @State private var errorMessage: String? = nil
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -40,22 +41,34 @@ struct ContentView: View {
                         if pricingManager.isInitialized {
                             VStack(spacing: 6) {
                                 HStack {
-                                    Image(systemName: "bolt.fill")
+                                    Image(systemName: pricingManager.isUnlimited ? "infinity" : "bolt.fill")
                                         .foregroundColor(creditsColor)
                                     
-                                    Text("\(pricingManager.userCredits) credits")
+                                    Text(pricingManager.isUnlimited ? "Unlimited" : "\(pricingManager.userCredits) credits")
                                         .fontWeight(.medium)
                                         .foregroundColor(creditsColor)
                                     
-                                    Button("Get More") {
-                                        showingPricingView = true
+                                    HStack(spacing: 8) {
+                                        Button("Get More") {
+                                            showingPricingView = true
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(8)
+                                        
+                                        Button("Promo Code") {
+                                            showingPromoCodeView = true
+                                        }
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.green.opacity(0.1))
+                                        .cornerRadius(8)
                                     }
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(8)
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -63,7 +76,7 @@ struct ContentView: View {
                                 .cornerRadius(10)
                                 
                                 // Launch promotion indicator
-                                if isLaunchPeriod {
+                                if isLaunchPeriod && !pricingManager.isUnlimited {
                                     HStack {
                                         Image(systemName: "gift.fill")
                                             .foregroundColor(.green)
@@ -294,6 +307,9 @@ struct ContentView: View {
             .sheet(isPresented: $showingPricingView) {
                 PricingView()
             }
+            .sheet(isPresented: $showingPromoCodeView) {
+                PromoCodeView()
+            }
             .alert("Error", isPresented: $showingAlert) {
                 Button("OK") {
                     errorMessage = nil
@@ -322,7 +338,9 @@ struct ContentView: View {
     // MARK: - Computed Properties
     
     private var creditsColor: Color {
-        if pricingManager.userCredits >= 10 {
+        if pricingManager.isUnlimited {
+            return .green
+        } else if pricingManager.userCredits >= 10 {
             return .blue
         } else if pricingManager.userCredits >= 3 {
             return .orange
