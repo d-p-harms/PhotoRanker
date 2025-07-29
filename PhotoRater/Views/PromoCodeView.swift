@@ -1,5 +1,6 @@
+
 // PromoCodeView.swift
-// Updated for single secure promo code
+// Final production version for promo code redemption UI
 
 import SwiftUI
 import FirebaseAuth
@@ -66,42 +67,50 @@ struct PromoCodeView: View {
                 Image(systemName: "gift.fill")
                     .font(.system(size: 40))
                     .foregroundColor(.green)
-                    .scaleEffect(promoManager.isValidating ? 1.1 : 1.0)
-                    .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: promoManager.isValidating)
+                    .scaleEffect(promoManager.isValidating ? 0.9 : 1.0)
+                    .animation(.easeInOut(duration: 0.6).repeatCount(promoManager.isValidating ? .max : 0), value: promoManager.isValidating)
             }
             
             VStack(spacing: 8) {
                 Text("Redeem Promo Code")
                     .font(.title2)
                     .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
-                Text("Enter your exclusive promo code to unlock unlimited photo analysis")
-                    .font(.subheadline)
+                Text("Enter your promo code to unlock exclusive benefits")
+                    .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .lineLimit(3)
+                    .lineLimit(2)
             }
         }
     }
     
     private var inputSection: some View {
         VStack(spacing: 20) {
-            // Text Field
+            // Input Field
             VStack(alignment: .leading, spacing: 8) {
                 Text("Promo Code")
                     .font(.headline)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
-                TextField("Enter 12-character code", text: $promoCode)
-                    .textFieldStyle(CustomTextFieldStyle())
+                TextField("Enter promo code", text: $promoCode)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .autocapitalization(.allCharacters)
                     .disableAutocorrection(true)
-                    .textCase(.uppercase)
-                    .disabled(promoManager.isValidating)
-                    .onSubmit {
-                        if !promoCode.isEmpty && !promoManager.isValidating {
-                            redeemCode()
-                        }
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(promoCode.isEmpty ? Color.gray.opacity(0.3) : Color.blue, lineWidth: 2)
+                    )
+                    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                        showingKeyboard = true
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                        showingKeyboard = false
                     }
             }
             
@@ -111,20 +120,25 @@ struct PromoCodeView: View {
                     if promoManager.isValidating {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.9)
+                            .scaleEffect(0.8)
+                        
+                        Text("Validating...")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     } else {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: "gift.fill")
                             .font(.title3)
+                        
+                        Text("Redeem Code")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     }
-                    
-                    Text(promoManager.isValidating ? "Validating Code..." : "Redeem Code")
-                        .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 14)
                         .fill(buttonColor)
                 )
                 .scaleEffect(promoManager.isValidating ? 0.98 : 1.0)
@@ -190,8 +204,6 @@ struct PromoCodeView: View {
             }
             
             VStack(spacing: 16) {
-                
-                
                 InfoRow(
                     icon: "shield.fill",
                     iconColor: .blue,
@@ -256,34 +268,11 @@ struct PromoCodeView: View {
     }
     
     private func hideKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil,
-            from: nil,
-            for: nil
-        )
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
 // MARK: - Supporting Views
-
-struct CustomTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .font(.title3)
-            .fontWeight(.medium)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    )
-            )
-    }
-}
 
 struct InfoRow: View {
     let icon: String
@@ -292,21 +281,22 @@ struct InfoRow: View {
     let description: String
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(iconColor)
-                .frame(width: 24)
+                .frame(width: 24, height: 24)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 
                 Text(description)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
@@ -314,6 +304,10 @@ struct InfoRow: View {
     }
 }
 
-#Preview {
-    PromoCodeView()
+// MARK: - Preview
+
+struct PromoCodeView_Previews: PreviewProvider {
+    static var previews: some View {
+        PromoCodeView()
+    }
 }

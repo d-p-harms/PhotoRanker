@@ -1,5 +1,5 @@
 // PromoCodeManager.swift
-// Updated with single secure promo code
+// Final production version with server-side validation
 
 import Foundation
 import FirebaseFirestore
@@ -14,17 +14,6 @@ class PromoCodeManager: ObservableObject {
     @Published var isSuccess = false
     
     private let db = Firestore.firestore()
-    
-    // Single secure promo code
-    private let promoCodes: [String: PromoCodeDetails] = [
-        "K9X7M3P8Q2W5": PromoCodeDetails(
-            credits: 999,
-            description: "Unlimited Access",
-            isUnlimited: true,
-            expirationDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
-            maxUses: 10
-        )
-    ]
     
     private init() {}
     
@@ -47,26 +36,71 @@ class PromoCodeManager: ObservableObject {
             return .failure("Invalid format")
         }
         
-        // Check if code exists
-        guard let promoDetails = promoCodes[cleanCode] else {
-            await updateUI(isValidating: false, message: "Invalid promo code", success: false)
-            return .failure("Invalid promo code")
-        }
-        
-        // Check expiration
-        if Date() > promoDetails.expirationDate {
-            await updateUI(isValidating: false, message: "This promo code has expired", success: false)
-            return .failure("Promo code expired")
-        }
-        
         // Ensure user is authenticated
         guard let userId = await ensureAuthenticated() else {
             await updateUI(isValidating: false, message: "Authentication failed. Please try again.", success: false)
             return .failure("Authentication failed")
         }
         
-        // Perform redemption
+        // Fetch promo code from Firestore
         do {
+            let promoDoc = try await db.collection("promoCodes").document(cleanCode).getDocument()
+            
+            guard promoDoc.exists, let promoData = promoDoc.data() else {
+                await updateUI(isValidating: false, message: "Invalid promo code", success: false)
+                return .failure("Invalid promo code")
+            }
+            
+            // Parse Firestore data
+            guard let credits = promoData["credits"] as? Int,
+                  let description = promoData["description"] as? String,
+                  let isUnlimited = promoData["isUnlimited"] as? Bool,
+                  let maxUses = promoData["maxUses"] as? Int,
+                  let isActive = promoData["isActive"] as? Bool,
+                  let expirationTimestamp = promoData["expirationDate"] as? Timestamp else {
+                await updateUI(isValidating: false, message: "Invalid promo code configuration", success: false)
+                return .failure("Invalid promo code configuration")
+            }
+            
+            let expirationDate = expirationTimestamp.dateValue()
+            let currentUses = promoData["currentUses"] as? Int ?? 0
+            
+            let promoDetails = PromoCodeDetails(
+                credits: credits,
+                description: description,
+                isUnlimited: isUnlimited,
+                expirationDate: expirationDate,
+                maxUses: maxUses
+            )
+            
+            // Check if promo code is active
+            guard isActive else {
+                await updateUI(isValidating: false, message: "This promo code is no longer active", success: false)
+                return .failure("Promo code inactive")
+            }
+            
+            // Check expiration
+            if Date() > promoDetails.expirationDate {
+                await updateUI(isValidating: false, message: "This promo code has expired", success: false)
+                return .failure("Promo code expired")
+            }
+            
+            // Check usage limits
+            if currentUses >= maxUses {
+                await updateUI(isValidating: false, message: "This promo code has reached its usage limit", success: false)
+                return .failure("Usage limit reached")
+            }
+            
+            // Check if user already redeemed this code
+            let userPromoDoc = try await db.collection("users").document(userId)
+                .collection("redeemedPromoCodes").document(cleanCode).getDocument()
+            
+            if userPromoDoc.exists {
+                await updateUI(isValidating: false, message: "You've already used this promo code", success: false)
+                return .failure("Already redeemed")
+            }
+            
+            // Perform redemption
             try await performRedemption(userId: userId, code: cleanCode, promoDetails: promoDetails)
             
             // Success
@@ -78,16 +112,12 @@ class PromoCodeManager: ObservableObject {
                     success: true
                 )
             } else {
-                PricingManager.shared.addCredits(count: promoDetails.credits)
                 await updateUI(
                     isValidating: false,
-                    message: "🎉 Success! Added \(promoDetails.credits) credits to your account.",
+                    message: "🎉 Success! You've received \(promoDetails.credits) credits.",
                     success: true
                 )
             }
-            
-            // Refresh user credits
-            await PricingManager.shared.loadUserCredits()
             
             return .success(promoDetails)
             
@@ -98,29 +128,16 @@ class PromoCodeManager: ObservableObject {
         }
     }
     
-    // Helper method to check if a code exists (for testing)
-    func isValidCode(_ code: String) -> Bool {
-        let upperCode = code.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        return promoCodes[upperCode] != nil
-    }
-    
-    // Get all available promo codes (for testing/admin purposes)
-    func getAllPromoCodes() -> [String: PromoCodeDetails] {
-        return promoCodes
-    }
-    
     // MARK: - Private Methods
     
     private func ensureAuthenticated() async -> String? {
         if let currentUser = Auth.auth().currentUser {
-            print("✅ User already authenticated: \(currentUser.uid)")
             return currentUser.uid
         }
         
-        // Try to sign in anonymously
+        // Attempt anonymous sign-in
         do {
             let result = try await Auth.auth().signInAnonymously()
-            print("✅ Successfully authenticated user: \(result.user.uid)")
             return result.user.uid
         } catch {
             print("❌ Authentication failed: \(error.localizedDescription)")
@@ -129,21 +146,17 @@ class PromoCodeManager: ObservableObject {
     }
     
     private func performRedemption(userId: String, code: String, promoDetails: PromoCodeDetails) async throws {
-        // Check if user has already used this code
         let userPromoRef = db.collection("users").document(userId)
             .collection("redeemedPromoCodes").document(code)
+        let globalPromoRef = db.collection("promoCodes").document(code)
         
-        let userPromoDoc = try await userPromoRef.getDocument()
-        
-        if userPromoDoc.exists {
-            throw PromoCodeError.alreadyRedeemed
+        // Check current usage count again (race condition protection)
+        let currentPromoDoc = try await globalPromoRef.getDocument()
+        guard let currentData = currentPromoDoc.data() else {
+            throw PromoCodeError.networkError
         }
         
-        // Check global usage limit
-        let globalPromoRef = db.collection("promoCodes").document(code)
-        let globalPromoDoc = try await globalPromoRef.getDocument()
-        
-        let currentUses = globalPromoDoc.data()?["uses"] as? Int ?? 0
+        let currentUses = currentData["currentUses"] as? Int ?? 0
         if currentUses >= promoDetails.maxUses {
             throw PromoCodeError.usageLimitReached
         }
@@ -183,10 +196,8 @@ class PromoCodeManager: ObservableObject {
                 
                 // Update global usage count
                 let globalData: [String: Any] = [
-                    "uses": currentUses + 1,
+                    "currentUses": currentUses + 1,
                     "lastUsed": FieldValue.serverTimestamp(),
-                    "description": promoDetails.description,
-                    "maxUses": promoDetails.maxUses
                 ]
                 
                 transaction.setData(globalData, forDocument: globalPromoRef, merge: true)
@@ -198,8 +209,6 @@ class PromoCodeManager: ObservableObject {
                 return nil
             }
         }
-        
-        print("✅ Promo code \(code) redeemed successfully for user \(userId)")
     }
     
     private func updateUI(isValidating: Bool, message: String?, success: Bool) async {
@@ -243,7 +252,6 @@ class PromoCodeManager: ObservableObject {
             } else if description.contains("timeout") {
                 return "Request timed out. Please try again."
             } else {
-                print("❌ Unhandled error: \(error.localizedDescription)")
                 return "Something went wrong. Please try again."
             }
         }

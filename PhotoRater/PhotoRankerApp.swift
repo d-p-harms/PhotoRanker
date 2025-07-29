@@ -1,37 +1,31 @@
-//
-//  PhotoRaterApp.swift
-//  PhotoRater
-//
-//  Created by David Harms on 4/17/25.
-//
+// PhotoRaterApp.swift
+// Main app file with App Check configuration
 
 import SwiftUI
-import FirebaseCore
+import Firebase
+import FirebaseAppCheck
 
 @main
 struct PhotoRaterApp: App {
-    // Register app delegate for Firebase setup
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    
+    init() {
+        // Configure App Check for debug/simulator builds
+        #if DEBUG || targetEnvironment(simulator)
+        let providerFactory = AppCheckDebugProviderFactory()
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+        #else
+        // Production App Check configuration
+        let providerFactory = DeviceCheckProviderFactory()
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+        #endif
+        
+        // Configure Firebase
+        FirebaseApp.configure()
+    }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    // Ensure Firebase is configured
-                    if FirebaseApp.app() == nil {
-                        FirebaseApp.configure()
-                    }
-                }
         }
-    }
-}
-
-// Extension for handling app lifecycle events
-extension PhotoRaterApp {
-    private func setupAppearance() {
-        // Configure global app appearance if needed
-        UINavigationBar.appearance().largeTitleTextAttributes = [
-            .foregroundColor: UIColor.label
-        ]
     }
 }
