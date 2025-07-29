@@ -44,34 +44,48 @@ struct ContentView: View {
                                     Image(systemName: pricingManager.isUnlimited ? "infinity" : "bolt.fill")
                                         .foregroundColor(creditsColor)
                                     
-                                    Text(pricingManager.isUnlimited ?
-                                         "Unlimited Analyses" :
-                                         "\(pricingManager.userCredits) analyses remaining")
-                                        .font(.subheadline)
+                                    Text(pricingManager.isUnlimited ? "Unlimited" : "\(pricingManager.userCredits) credits")
                                         .fontWeight(.medium)
+                                        .foregroundColor(creditsColor)
                                     
-                                    if !pricingManager.isUnlimited {
+                                    HStack(spacing: 8) {
                                         Button("Get More") {
                                             showingPricingView = true
                                         }
                                         .font(.caption)
                                         .foregroundColor(.blue)
-                                    }
-                                }
-                                
-                                // Launch period promotion display
-                                if isLaunchPeriod && !pricingManager.isUnlimited {
-                                    VStack(spacing: 4) {
-                                        Text("🎉 Launch Special: New users get 15 free analyses!")
-                                            .font(.caption)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.green)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(8)
                                         
-                                        Button("Enter Promo Code") {
+                                        Button("Promo Code") {
                                             showingPromoCodeView = true
                                         }
                                         .font(.caption)
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.green)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.green.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(creditsColor.opacity(0.05))
+                                .cornerRadius(10)
+                                
+                                // Launch promotion indicator
+                                if isLaunchPeriod && !pricingManager.isUnlimited {
+                                    HStack {
+                                        Image(systemName: "gift.fill")
+                                            .foregroundColor(.green)
+                                            .font(.caption)
+                                        
+                                        Text("Launch Special: New users get 15 free analyses!")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.green)
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 4)
@@ -108,9 +122,7 @@ struct ContentView: View {
                                 .font(.largeTitle)
                                 .padding()
                             
-                            Text(selectedImages.isEmpty ?
-                                 "Upload Photos" :
-                                 "\(selectedImages.count) Photos Selected")
+                            Text(selectedImages.isEmpty ? "Upload Photos" : "\(selectedImages.count) Photos Selected")
                                 .fontWeight(.medium)
                         }
                         .padding()
@@ -260,9 +272,9 @@ struct ContentView: View {
                             VStack(spacing: 16) {
                                 ForEach(rankedPhotos) { photo in
                                     PhotoResultCard(rankedPhoto: photo)
+                                        .padding(.horizontal)
                                 }
                             }
-                            .padding(.horizontal)
                         }
                         .padding(.bottom, 20)
                     }
@@ -444,11 +456,48 @@ struct ContentView: View {
                         self.alertMessage = "Network error. Please check your connection and try again."
                         self.showingAlert = true
                     } else {
-                        self.alertMessage = error.localizedDescription
+                        self.alertMessage = "Error processing photos: \(error.localizedDescription)"
                         self.showingAlert = true
                     }
                 }
             }
         }
+    }
+}
+
+// MARK: - CriteriaCard Component
+struct CriteriaCard: View {
+    let criteria: RankingCriteria
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: criteria.icon)
+                    .font(.title2)
+                    .foregroundColor(isSelected ? .white : .blue)
+                
+                Text(criteria.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }

@@ -38,47 +38,47 @@ struct PhotoResultCard: View {
                 HStack(spacing: 8) {
                     QualityChip(title: "Visual", quality: getQualityLevel(rankedPhoto.detailedScores?.visualQuality ?? rankedPhoto.score), color: .blue)
                     QualityChip(title: "Appeal", quality: getQualityLevel(rankedPhoto.detailedScores?.attractiveness ?? rankedPhoto.score), color: .pink)
-                    QualityChip(title: "Profile Fit", quality: getQualityLevel(rankedPhoto.detailedScores?.swipeWorthiness ?? rankedPhoto.score), color: .purple)
+                    QualityChip(title: "Profile Fit", quality: getQualityLevel(rankedPhoto.detailedScores?.swipeWorthiness ?? rankedPhoto.score), color: .green)
+                    
                     Spacer()
                 }
                 
-                // Tags row
+                // Tags
                 if let tags = rankedPhoto.tags, !tags.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(tags.prefix(3), id: \.rawValue) { tag in
-                            HStack(spacing: 4) {
-                                Text(tag.emoji)
-                                    .font(.caption2)
-                                Text(tag.rawValue.capitalized)
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(tags, id: \.self) { tag in
+                                HStack(spacing: 4) {
+                                    Text(tag.emoji)
+                                        .font(.system(size: 12))
+                                    Text(tag.rawValue.capitalized)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundColor(.blue)
+                                .cornerRadius(6)
                             }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
                         }
-                        
-                        if tags.count > 3 {
-                            Text("+\(tags.count - 3)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
+                        .padding(.horizontal, 1)
                     }
                 }
                 
-                // Recommendation text - Keep it short and positive
-                if let reason = rankedPhoto.reason {
+                // Main comment - Full text, no truncation
+                if let reason = rankedPhoto.reason, !reason.isEmpty {
                     Text(reason)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .lineLimit(4)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Analysis completed")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
-                // "View Details" button (clearly labeled as an action)
+                // IMPROVED DETAILS BUTTON - Much more prominent and reliable
                 Button(action: {
                     showingDetailView = true
                 }) {
