@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-struct RankedPhoto: Identifiable {
+struct RankedPhoto: Identifiable, Codable {
     let id: UUID
     let fileName: String
     let storageURL: String?
@@ -18,6 +18,21 @@ struct RankedPhoto: Identifiable {
     let nextPhotoSuggestions: [String]?
     
     var localImage: UIImage?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fileName
+        case storageURL
+        case score
+        case tags
+        case reason
+        case detailedScores
+        case technicalFeedback
+        case datingInsights
+        case improvements
+        case strengths
+        case nextPhotoSuggestions
+    }
     
     // Simple initializer for backward compatibility
     init(image: UIImage, score: Double, tags: [PhotoTag]?, reason: String? = nil) {
@@ -80,6 +95,40 @@ struct RankedPhoto: Identifiable {
             strengths: self.strengths,
             nextPhotoSuggestions: self.nextPhotoSuggestions
         )
+    }
+
+    // Codable conformance (excluding localImage)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        fileName = try container.decode(String.self, forKey: .fileName)
+        storageURL = try container.decodeIfPresent(String.self, forKey: .storageURL)
+        score = try container.decode(Double.self, forKey: .score)
+        tags = try container.decodeIfPresent([PhotoTag].self, forKey: .tags)
+        reason = try container.decodeIfPresent(String.self, forKey: .reason)
+        detailedScores = try container.decodeIfPresent(DetailedScores.self, forKey: .detailedScores)
+        technicalFeedback = try container.decodeIfPresent(TechnicalFeedback.self, forKey: .technicalFeedback)
+        datingInsights = try container.decodeIfPresent(DatingInsights.self, forKey: .datingInsights)
+        improvements = try container.decodeIfPresent([String].self, forKey: .improvements)
+        strengths = try container.decodeIfPresent([String].self, forKey: .strengths)
+        nextPhotoSuggestions = try container.decodeIfPresent([String].self, forKey: .nextPhotoSuggestions)
+        localImage = nil
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(fileName, forKey: .fileName)
+        try container.encodeIfPresent(storageURL, forKey: .storageURL)
+        try container.encode(score, forKey: .score)
+        try container.encodeIfPresent(tags, forKey: .tags)
+        try container.encodeIfPresent(reason, forKey: .reason)
+        try container.encodeIfPresent(detailedScores, forKey: .detailedScores)
+        try container.encodeIfPresent(technicalFeedback, forKey: .technicalFeedback)
+        try container.encodeIfPresent(datingInsights, forKey: .datingInsights)
+        try container.encodeIfPresent(improvements, forKey: .improvements)
+        try container.encodeIfPresent(strengths, forKey: .strengths)
+        try container.encodeIfPresent(nextPhotoSuggestions, forKey: .nextPhotoSuggestions)
     }
 }
 
