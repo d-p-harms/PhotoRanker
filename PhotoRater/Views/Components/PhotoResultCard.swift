@@ -2,15 +2,18 @@ import SwiftUI
 
 struct PhotoResultCard: View {
     let rankedPhoto: RankedPhoto
+    /// Width of the card used to determine responsive sizing
+    let cardWidth: CGFloat
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
     @State private var showingDetailView = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let imageHeight = cardWidth * 0.55
+        return VStack(alignment: .leading, spacing: 8) {
             // Photo display with quality indicator instead of score
             ZStack(alignment: .topTrailing) {
-                photoImageView
+                photoImageView(height: imageHeight)
                 
                 // Quality badge instead of numerical score
                 VStack(spacing: 2) {
@@ -161,7 +164,7 @@ struct PhotoResultCard: View {
         }
     }
     
-    private var photoImageView: some View {
+    private func photoImageView(height: CGFloat) -> some View {
         Group {
             if let localImage = rankedPhoto.localImage {
                 Image(uiImage: localImage)
@@ -173,7 +176,6 @@ struct PhotoResultCard: View {
                     .scaledToFill()
             } else if isLoading {
                 ProgressView()
-                    .frame(height: 180)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -184,7 +186,7 @@ struct PhotoResultCard: View {
                     )
             }
         }
-        .frame(height: 180)
+        .frame(height: height)
         .clipped()
         .cornerRadius(12)
     }

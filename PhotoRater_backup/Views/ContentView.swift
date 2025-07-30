@@ -269,11 +269,15 @@ struct ContentView: View {
                             }
                             
                             // Single column of photo cards
-                            VStack(spacing: 16) {
-                                ForEach(rankedPhotos) { photo in
-                                    PhotoResultCard(rankedPhoto: photo)
-                                        .padding(.horizontal)
+                            GeometryReader { proxy in
+                                let cardWidth = proxy.size.width - 32
+                                VStack(spacing: 16) {
+                                    ForEach(rankedPhotos) { photo in
+                                        PhotoResultCard(rankedPhoto: photo, cardWidth: cardWidth)
+                                            .padding(.horizontal)
+                                    }
                                 }
+                                .frame(width: proxy.size.width)
                             }
                         }
                         .padding(.bottom, 20)

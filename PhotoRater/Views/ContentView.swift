@@ -359,12 +359,16 @@ struct ContentView: View {
     }
     
     private var resultsPhotoCards: some View {
-        VStack(spacing: 16) {
-            ForEach(rankedPhotos) { photo in
-                PhotoResultCard(rankedPhoto: photo)
+        GeometryReader { proxy in
+            let cardWidth = proxy.size.width - 32
+            VStack(spacing: 16) {
+                ForEach(rankedPhotos) { photo in
+                    PhotoResultCard(rankedPhoto: photo, cardWidth: cardWidth)
+                }
             }
+            .padding(.horizontal)
+            .frame(width: proxy.size.width)
         }
-        .padding(.horizontal)
     }
     
     @ViewBuilder
