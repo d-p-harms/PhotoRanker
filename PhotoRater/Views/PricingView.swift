@@ -172,6 +172,7 @@ struct PricingView: View {
                 }
             )
         }
+        .navigationViewStyle(.stack)
         .sheet(isPresented: $showingPromoCodeView) {
             PromoCodeView()
         }

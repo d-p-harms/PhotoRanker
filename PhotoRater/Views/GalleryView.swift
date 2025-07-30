@@ -25,6 +25,7 @@ struct GalleryView: View {
             }
             .navigationTitle("Gallery")
         }
+        .navigationViewStyle(.stack)
     }
 }
 

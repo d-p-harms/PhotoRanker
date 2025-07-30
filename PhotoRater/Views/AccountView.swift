@@ -39,6 +39,7 @@ struct AccountView: View {
             }
             .navigationTitle("Account")
         }
+        .navigationViewStyle(.stack)
     }
 }
 
