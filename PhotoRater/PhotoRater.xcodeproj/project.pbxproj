@@ -30,6 +30,7 @@
 		AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C12DB33D170005A7DC /* CriteriaButton.swift */; };
                 AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */; };
                 AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */; };
+                ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDEAD002F00000000000000 /* DeviceSizing.swift */; };
                 AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9F0A802F1111110005A7DC /* MainTabView.swift */; };
                 AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */; };
                 AB7F6193A7616D0322508231 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BF5C86947447786F514F7 /* AccountView.swift */; };
@@ -135,6 +136,7 @@
 		AB8032C12DB33D170005A7DC /* CriteriaButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriteriaButton.swift; sourceTree = "<group>"; };
 		AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoResultCard.swift; sourceTree = "<group>"; };
                 AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingOverlay.swift; sourceTree = "<group>"; };
+                ABDEAD002F00000000000000 /* DeviceSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSizing.swift; sourceTree = "<group>"; };
                 AB9F0A802F1111110005A7DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
                 AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
                 AB9BF5C86947447786F514F7 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
@@ -316,12 +318,13 @@
 				AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */,
 				AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */,
 				AB8032C12DB33D170005A7DC /* CriteriaButton.swift */,
-				AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */,
-				AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
+                                AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */,
+                                AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */,
+                                ABDEAD002F00000000000000 /* DeviceSizing.swift */,
+                        );
+                        path = Components;
+                        sourceTree = "<group>";
+                };
 		AB8032C72DB33DB60005A7DC /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -601,9 +604,10 @@
 		AB8032742DB18F4A0005A7DC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (
-				AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
-				AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
+                        files = (
+                                AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
+                                ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */,
+                                AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
 				AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */,
 				AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */,
 				AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */,
