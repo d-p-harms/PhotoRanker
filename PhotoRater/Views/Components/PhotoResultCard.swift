@@ -173,7 +173,7 @@ struct PhotoResultCard: View {
                     .scaledToFill()
             } else if isLoading {
                 ProgressView()
-                    .frame(height: 180)
+                    .frame(height: 180 * DeviceSizing.scale)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -184,7 +184,7 @@ struct PhotoResultCard: View {
                     )
             }
         }
-        .frame(height: 180)
+        .frame(height: 180 * DeviceSizing.scale)
         .clipped()
         .cornerRadius(12)
     }
