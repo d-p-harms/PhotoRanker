@@ -765,3 +765,92 @@ exports.updateUserCredits = onCall({
     throw error;
   }
 });
+exports.redeemPromoCode = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const { auth, data } = request;
+  const code = (data && data.code) ? String(data.code) : '';
+
+  if (!auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const cleanCode = code.toUpperCase().trim();
+  if (!cleanCode) {
+    throw new HttpsError('invalid-argument', 'Invalid promo code');
+  }
+
+  const db = admin.firestore();
+  const promoRef = db.collection('promoCodes').doc(cleanCode);
+  const userRef = db.collection('users').doc(auth.uid);
+  const userPromoRef = userRef.collection('redeemedPromoCodes').doc(cleanCode);
+
+  let promoData;
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const promoDoc = await transaction.get(promoRef);
+      if (!promoDoc.exists) {
+        throw new HttpsError('not-found', 'Promo code not found');
+      }
+      promoData = promoDoc.data();
+      if (!promoData.isActive) {
+        throw new HttpsError('failed-precondition', 'Promo code inactive');
+      }
+      if (promoData.expirationDate && promoData.expirationDate.toDate() < new Date()) {
+        throw new HttpsError('deadline-exceeded', 'Promo code expired');
+      }
+      const currentUses = promoData.currentUses || 0;
+      if (currentUses >= promoData.maxUses) {
+        throw new HttpsError('resource-exhausted', 'Promo code usage limit reached');
+      }
+
+      const userPromoDoc = await transaction.get(userPromoRef);
+      if (userPromoDoc.exists) {
+        throw new HttpsError('already-exists', 'Promo code already redeemed');
+      }
+
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.data() || {};
+      const currentCredits = userData.credits || 0;
+
+      const updateData = {
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      if (promoData.isUnlimited) {
+        updateData.isUnlimited = true;
+        updateData.unlimitedUntil = promoData.expirationDate;
+        updateData.credits = 999;
+      } else {
+        updateData.credits = currentCredits + promoData.credits;
+      }
+
+      transaction.set(userRef, updateData, { merge: true });
+      transaction.set(userPromoRef, {
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+        creditsAdded: promoData.credits,
+        isUnlimited: promoData.isUnlimited,
+        description: promoData.description,
+      });
+      transaction.update(promoRef, {
+        currentUses: currentUses + 1,
+        lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    return {
+      success: true,
+      credits: promoData.credits,
+      description: promoData.description,
+      isUnlimited: promoData.isUnlimited,
+      expirationDate: promoData.expirationDate.toMillis() / 1000,
+      maxUses: promoData.maxUses,
+    };
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    console.error('Error redeeming promo code:', error);
+    throw new HttpsError('internal', 'Failed to redeem promo code');
+  }
+});
