@@ -88,8 +88,8 @@ async function analyzePhotoWithGemini(photoUrl, criteria) {
     
     // Call Gemini API
     const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    const responseText = response.text();
+    const aiResponse = await result.response;
+    const responseText = await aiResponse.text();
     
     // Parse the response
     return parseGeminiResponse(responseText, photoUrl);
