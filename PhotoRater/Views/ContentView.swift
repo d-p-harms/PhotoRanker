@@ -25,7 +25,8 @@ struct ContentView: View {
     @StateObject private var pricingManager = PricingManager.shared
     
     var body: some View {
-        NavigationView {
+        let scale = DeviceSizing.scale
+        return NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
                     titleAndCreditsSection
@@ -238,7 +239,7 @@ struct ContentView: View {
             }
             .foregroundColor(.blue)
             .frame(maxWidth: .infinity)
-            .frame(height: 120)
+            .frame(height: 120 * scale)
             .background(Color.blue.opacity(0.1))
             .cornerRadius(12)
             .overlay(
@@ -563,7 +564,7 @@ struct CriteriaCard: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity)
-            .frame(height: 80)
+            .frame(height: 80 * DeviceSizing.scale)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(isSelected ? Color.blue : Color(.systemGray6))
