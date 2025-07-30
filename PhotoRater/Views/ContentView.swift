@@ -23,6 +23,7 @@ struct ContentView: View {
     @State private var alertMessage = ""
     
     @StateObject private var pricingManager = PricingManager.shared
+    @StateObject private var galleryManager = GalleryManager.shared
     
     var body: some View {
         let scale = DeviceSizing.scale
@@ -527,6 +528,7 @@ struct ContentView: View {
                     self.rankedPhotos = rankedPhotos
                     self.isProcessing = false
                     pricingManager.deductCredits(count: selectedImages.count)
+                    galleryManager.add(rankedPhotos)
                 }
             case .failure(let error):
                 Task { @MainActor in
