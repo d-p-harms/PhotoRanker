@@ -46,6 +46,7 @@ struct PromoCodeView: View {
                 hideKeyboard()
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     // MARK: - View Components

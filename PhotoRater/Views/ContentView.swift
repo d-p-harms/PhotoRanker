@@ -63,6 +63,7 @@ struct ContentView: View {
                 }
             }
         }
+        .navigationViewStyle(.stack)
     }
     
     // MARK: - View Components

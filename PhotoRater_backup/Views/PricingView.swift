@@ -242,12 +242,13 @@ struct PricingView: View {
                 trailing: Button("Done") {
                     presentationMode.wrappedValue.dismiss()
                 }
-            )
-            .sheet(isPresented: $showingPromoCodeView) {
-                PromoCodeView()
-            }
-        }
-    }
+              )
+              .sheet(isPresented: $showingPromoCodeView) {
+                  PromoCodeView()
+              }
+          }
+          .navigationViewStyle(.stack)
+      }
     
     private var isLaunchPeriod: Bool {
         let launchDate = Calendar.current.date(from: DateComponents(year: 2025, month: 8, day: 10))!

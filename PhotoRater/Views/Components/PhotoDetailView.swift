@@ -64,6 +64,7 @@ struct PhotoDetailView: View {
                 }
             )
         }
+        .navigationViewStyle(.stack)
         .onAppear {
             loadImageIfNeeded()
         }
