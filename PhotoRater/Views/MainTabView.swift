@@ -8,14 +8,14 @@ struct MainTabView: View {
                     Label("Analyze", systemImage: "magnifyingglass")
                 }
 
-            PricingView()
+            GalleryView()
                 .tabItem {
-                    Label("Credits", systemImage: "bolt.fill")
+                    Label("Gallery", systemImage: "photo.on.rectangle")
                 }
 
-            PromoCodeView()
+            AccountView()
                 .tabItem {
-                    Label("Promo", systemImage: "gift.fill")
+                    Label("Account", systemImage: "person.crop.circle")
                 }
         }
     }
