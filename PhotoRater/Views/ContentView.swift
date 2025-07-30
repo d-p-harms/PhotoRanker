@@ -239,7 +239,7 @@ struct ContentView: View {
             }
             .foregroundColor(.blue)
             .frame(maxWidth: .infinity)
-            .frame(height: 120 * scale)
+            .frame(height: 120 * DeviceSizing.scale)
             .background(Color.blue.opacity(0.1))
             .cornerRadius(12)
             .overlay(
