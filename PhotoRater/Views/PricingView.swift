@@ -1,5 +1,6 @@
 // PricingView.swift
 // Updated to work with StoreKit 2 APIs, new pricing, and promo codes
+// Fixed iPad button spacing issues
 
 import SwiftUI
 import StoreKit
@@ -47,38 +48,24 @@ struct PricingView: View {
                             // Show launch promo status
                             if isLaunchPeriod && !pricingManager.isUnlimited {
                                 Text("🎉 Launch Special Active: New users get 15 free analyses!")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.1))
-                                    .cornerRadius(6)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.orange)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(8)
                                 
-                                Text("Ends August 24, 2025")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    } else {
-                        VStack(spacing: 8) {
-                            Text("⚡ You're out of credits!")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(.orange)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.orange.opacity(0.1))
-                                .cornerRadius(8)
-                            
-                            if isLaunchPeriod {
-                                Text("🎉 New users get 15 free analyses during our launch special!")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.1))
-                                    .cornerRadius(6)
+                                if isLaunchPeriod {
+                                    Text("🎉 New users get 15 free analyses during our launch special!")
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 4)
+                                        .background(Color.green.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
                             }
                         }
                     }
@@ -121,7 +108,8 @@ struct PricingView: View {
                                     .scaleEffect(0.8)
                             }
                             
-                            Text(pricingManager.isLoading ? "Processing..." : "Get \(selectedProductID.tier.title)")
+                            Text(pricingManager.isLoading ?
+                                "Processing..." : "Get \(selectedProductID.tier.title)")
                                 .fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
@@ -139,7 +127,7 @@ struct PricingView: View {
                     .disabled(pricingManager.isLoading || pricingManager.products.isEmpty)
                     .padding(.horizontal)
                     
-                    // Restore purchases and promo code buttons
+                    // Restore purchases and promo code buttons - FIXED FOR iPAD
                     HStack(spacing: 20) {
                         Button("Restore Purchases") {
                             Task {
@@ -148,112 +136,60 @@ struct PricingView: View {
                         }
                         .font(.subheadline)
                         .foregroundColor(.blue)
+                        .frame(minWidth: 120, maxWidth: .infinity)
                         
                         Button("Have a Promo Code?") {
                             showingPromoCodeView = true
                         }
                         .font(.subheadline)
-                        .foregroundColor(.green)
-                    }
-                    
-                    // Value demonstration
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("What you get with every analysis:")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            FeatureRow(icon: "brain.head.profile", text: "AI analysis of photo quality, attractiveness & dating appeal")
-                            FeatureRow(icon: "chart.bar.fill", text: "Detailed quality breakdown with visual indicators")
-                            FeatureRow(icon: "lightbulb.fill", text: "Technical feedback on lighting, composition & styling")
-                            FeatureRow(icon: "person.2.fill", text: "Personality traits your photos project")
-                            FeatureRow(icon: "target", text: "Specific improvement suggestions")
-                            FeatureRow(icon: "camera.badge.plus", text: "Next photo recommendations for profile balance")
-                        }
+                        .foregroundColor(.blue)
+                        .frame(minWidth: 120, maxWidth: .infinity)
                     }
                     .padding(.horizontal)
                     
-                    // Launch special callout
-                    if isLaunchPeriod {
-                        VStack(spacing: 8) {
-                            Text("🚀 Launch Special")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                            
-                            Text("New users get 15 FREE analyses!")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            Text("Perfect for testing all our AI analysis features")
+                    // Terms and disclaimer
+                    VStack(spacing: 8) {
+                        Text("By purchasing, you agree to our Terms of Service")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        if isLaunchPeriod {
+                            Text("Launch promotion valid through August 24, 2025")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            
-                            Text("Ends August 24, 2025")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.orange)
+                                .italic()
                         }
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.green.opacity(0.1), Color.blue.opacity(0.1)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.green, lineWidth: 2)
-                        )
-                        .padding(.horizontal)
                     }
-                    
-                    // Social proof
-                    VStack(spacing: 8) {
-                        HStack {
-                            ForEach(0..<5) { _ in
-                                Image(systemName: "star.fill")
-                                    .foregroundColor(.yellow)
-                                    .font(.caption)
-                            }
-                            Text("4.8")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        
-                        Text("\"Helped me pick photos that actually got matches!\"")
-                            .font(.caption)
-                            .italic()
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
                     .padding(.horizontal)
-                    
-                    Spacer(minLength: 20)
                 }
+                .padding(.bottom)
             }
-            .navigationTitle("Choose Your Plan")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                trailing: Button("Done") {
+                leading: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
                 }
             )
-            .sheet(isPresented: $showingPromoCodeView) {
-                PromoCodeView()
-            }
+        }
+        .sheet(isPresented: $showingPromoCodeView) {
+            PromoCodeView()
+        }
+        .onAppear {
+            // Products are automatically loaded in PricingManager.init()
+            // No need to call loadProducts manually
         }
     }
+    
+    // MARK: - Computed Properties
     
     private var isLaunchPeriod: Bool {
         let launchDate = Calendar.current.date(from: DateComponents(year: 2025, month: 8, day: 10))!
         let promotionEnd = Calendar.current.date(byAdding: .day, value: 14, to: launchDate)!
         return Date() >= launchDate && Date() < promotionEnd
     }
+    
+    // MARK: - Functions
     
     private func purchaseSelected() {
         Task {
@@ -262,6 +198,7 @@ struct PricingView: View {
     }
 }
 
+// MARK: - ProductCard Component
 struct ProductCard: View {
     let product: Product
     let productID: PricingManager.ProductID
@@ -369,20 +306,6 @@ struct ProductCard: View {
     }
 }
 
-struct FeatureRow: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundColor(.blue)
-                .frame(width: 20)
-            
-            Text(text)
-                .font(.subheadline)
-            
-            Spacer()
-        }
-    }
+#Preview {
+    PricingView()
 }
