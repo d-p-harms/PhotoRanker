@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */; };
 		AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */; };
 		AB496BE82DDEF2B100B87CA6 /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */; };
 		AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB496BED2DDF083400B87CA6 /* PricingManager.swift */; };
@@ -15,12 +16,14 @@
 		AB496C0B2DDF0A0300B87CA6 /* StoreKit_framework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB496BF62DDF0A0300B87CA6 /* StoreKit_framework.framework */; };
 		AB496C0C2DDF0A0300B87CA6 /* StoreKit_framework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AB496BF62DDF0A0300B87CA6 /* StoreKit_framework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AB496C172DDF0C9A00B87CA6 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB496C162DDF0C9A00B87CA6 /* StoreKit.framework */; };
+		AB52EB7D2E3ACC6D002EDA9D /* GalleryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB52EB7C2E3ACC6D002EDA9D /* GalleryManager.swift */; };
 		AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */; };
 		AB65586C2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586E2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */; };
 		AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */; };
+		AB7F6193A7616D0322508231 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BF5C86947447786F514F7 /* AccountView.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
 		AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A62DB191900005A7DC /* AppDelegate.swift */; };
 		AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */; };
@@ -28,13 +31,9 @@
 		AB8032B02DB334890005A7DC /* PhotoTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AE2DB334850005A7DC /* PhotoTag.swift */; };
 		AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */; };
 		AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C12DB33D170005A7DC /* CriteriaButton.swift */; };
-                AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */; };
-                AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */; };
-                ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDEAD002F00000000000000 /* DeviceSizing.swift */; };
-                AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9F0A802F1111110005A7DC /* MainTabView.swift */; };
-                AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */; };
-                AB7F6193A7616D0322508231 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BF5C86947447786F514F7 /* AccountView.swift */; };
-                AB8032D42DB343FC0005A7DC /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032D32DB343FC0005A7DC /* FirebaseAnalytics */; };
+		AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */; };
+		AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */; };
+		AB8032D42DB343FC0005A7DC /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032D32DB343FC0005A7DC /* FirebaseAnalytics */; };
 		AB8032D62DB343FC0005A7DC /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032D52DB343FC0005A7DC /* FirebaseAnalyticsOnDeviceConversion */; };
 		AB8032D82DB343FC0005A7DC /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032D72DB343FC0005A7DC /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		AB8032DA2DB343FC0005A7DC /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032D92DB343FC0005A7DC /* FirebaseAppCheck */; };
@@ -58,6 +57,8 @@
 		AB8032FE2DB343FC0005A7DC /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032FD2DB343FC0005A7DC /* FirebaseStorage */; };
 		AB8033002DB343FC0005A7DC /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = AB8032FF2DB343FC0005A7DC /* FirebaseStorageCombine-Community */; };
 		AB8033022DB343FC0005A7DC /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = AB8033012DB343FC0005A7DC /* FirebaseVertexAI */; };
+		AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9F0A802F1111110005A7DC /* MainTabView.swift */; };
+		ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDEAD002F00000000000000 /* DeviceSizing.swift */; };
 		ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -121,6 +122,7 @@
 		AB496BF62DDF0A0300B87CA6 /* StoreKit_framework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = StoreKit_framework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB496BFF2DDF0A0300B87CA6 /* StoreKit.frameworkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StoreKit.frameworkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB496C162DDF0C9A00B87CA6 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		AB52EB7C2E3ACC6D002EDA9D /* GalleryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryManager.swift; sourceTree = "<group>"; };
 		AB65586B2DB388D100113CFF /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeManager.swift; sourceTree = "<group>"; };
 		AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeView.swift; sourceTree = "<group>"; };
@@ -135,13 +137,13 @@
 		AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosPicker.swift; sourceTree = "<group>"; };
 		AB8032C12DB33D170005A7DC /* CriteriaButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriteriaButton.swift; sourceTree = "<group>"; };
 		AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoResultCard.swift; sourceTree = "<group>"; };
-                AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingOverlay.swift; sourceTree = "<group>"; };
-                ABDEAD002F00000000000000 /* DeviceSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSizing.swift; sourceTree = "<group>"; };
-                AB9F0A802F1111110005A7DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-                AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
-                AB9BF5C86947447786F514F7 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
-                AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoProcessor.swift; sourceTree = "<group>"; };
+		AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingOverlay.swift; sourceTree = "<group>"; };
+		AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoProcessor.swift; sourceTree = "<group>"; };
 		AB8032CA2DB33DDD0005A7DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = text; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		AB9BF5C86947447786F514F7 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		AB9F0A802F1111110005A7DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		ABDEAD002F00000000000000 /* DeviceSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSizing.swift; sourceTree = "<group>"; };
 		ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankerApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -301,14 +303,14 @@
 		AB8032BD2DB33CCF0005A7DC /* Views */ = {
 			isa = PBXGroup;
 			children = (
-                               AB80327D2DB18F4A0005A7DC /* ContentView.swift */,
-                               AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */,
-                               AB9BF5C86947447786F514F7 /* AccountView.swift */,
-                               AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
-                               AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
-                               AB9F0A802F1111110005A7DC /* MainTabView.swift */,
-                               AB8032BE2DB33CE70005A7DC /* Components */,
-                       );
+				AB80327D2DB18F4A0005A7DC /* ContentView.swift */,
+				AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */,
+				AB9BF5C86947447786F514F7 /* AccountView.swift */,
+				AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
+				AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
+				AB9F0A802F1111110005A7DC /* MainTabView.swift */,
+				AB8032BE2DB33CE70005A7DC /* Components */,
+			);
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -318,16 +320,17 @@
 				AB496BE72DDEF2AA00B87CA6 /* PhotoDetailView.swift */,
 				AB8032BF2DB33D020005A7DC /* PhotosPicker.swift */,
 				AB8032C12DB33D170005A7DC /* CriteriaButton.swift */,
-                                AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */,
-                                AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */,
-                                ABDEAD002F00000000000000 /* DeviceSizing.swift */,
-                        );
-                        path = Components;
-                        sourceTree = "<group>";
-                };
+				AB8032C32DB33D2E0005A7DC /* PhotoResultCard.swift */,
+				AB8032C52DB33D370005A7DC /* ProcessingOverlay.swift */,
+				ABDEAD002F00000000000000 /* DeviceSizing.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		AB8032C72DB33DB60005A7DC /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				AB52EB7C2E3ACC6D002EDA9D /* GalleryManager.swift */,
 				AB496BED2DDF083400B87CA6 /* PricingManager.swift */,
 				AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */,
 				AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */,
@@ -604,10 +607,10 @@
 		AB8032742DB18F4A0005A7DC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-                        files = (
-                                AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
-                                ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */,
-                                AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
+			files = (
+				AB8032C62DB33D470005A7DC /* ProcessingOverlay.swift in Sources */,
+				ABDEAD012F00000000000000 /* DeviceSizing.swift in Sources */,
+				AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */,
 				AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */,
 				AB8032C02DB33D0B0005A7DC /* PhotosPicker.swift in Sources */,
 				AB65586A2DB36D5900113CFF /* PhotoProcessor.swift in Sources */,
@@ -618,16 +621,17 @@
 				AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
+				AB52EB7D2E3ACC6D002EDA9D /* GalleryManager.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
 				AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
-                               ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
-                               AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
-                               AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */,
-                               AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */,
-                               AB7F6193A7616D0322508231 /* AccountView.swift in Sources */,
-                       );
+				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
+				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
+				AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */,
+				AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */,
+				AB7F6193A7616D0322508231 /* AccountView.swift in Sources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AB8032842DB18F4C0005A7DC /* Sources */ = {

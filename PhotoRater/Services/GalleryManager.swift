@@ -1,3 +1,11 @@
+//
+//  GalleryManager 2.swift
+//  PhotoRater
+//
+//  Created by David Harms on 7/30/25.
+//
+
+
 import Foundation
 import SwiftUI
 
