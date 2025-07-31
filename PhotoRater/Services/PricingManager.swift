@@ -149,15 +149,7 @@ class PricingManager: ObservableObject {
             return
         }
 
-        // Avoid Firestore calls when the device is offline
-        guard NetworkMonitor.shared.isConnected else {
-            await MainActor.run {
-                print("⚠️ Offline - using local free credit defaults")
-                self.freeCredits = self.isLaunchPeriod ? 15 : 3
-                self.updateTotalCredits()
-            }
-            return
-        }
+       
         
         let db = Firestore.firestore()
         
