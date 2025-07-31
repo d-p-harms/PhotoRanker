@@ -4,7 +4,13 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 admin.initializeApp();
 
-const genAI = new GoogleGenerativeAI(functions.config().gemini.api_key);
+const geminiConfig = functions.config().gemini || {};
+const geminiApiKey = geminiConfig.api_key || process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
+  console.warn('GEMINI API key is not configured. The analyzePhotos function will fail until a key is provided.');
+}
+
+const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 
 // Enhanced file path parsing with better error handling
 function parseFirebaseStorageUrl(photoUrl) {
@@ -286,11 +292,15 @@ exports.analyzePhotos = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'criteria is required');
     }
     
-    console.log(`Processing ${photoUrls.length} photos with criteria: ${criteria}`);
-    console.log('Photo URLs:', photoUrls);
-    
-    // Initialize Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  console.log(`Processing ${photoUrls.length} photos with criteria: ${criteria}`);
+  console.log('Photo URLs:', photoUrls);
+
+  if (!genAI) {
+    throw new functions.https.HttpsError('failed-precondition', 'GEMINI API key is not configured');
+  }
+
+  // Initialize Gemini model
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     // Process all photos
     const analysisPromises = photoUrls.map((url, index) => {
