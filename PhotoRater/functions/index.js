@@ -374,3 +374,189 @@ exports.initializeUser = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('internal', 'Failed to initialize user');
   }
 });
+
+// Fetch configuration values for the client
+exports.getConfig = functions.region('us-central1').https.onCall(async (data, context) => {
+  return {
+    maxPhotos: 12,
+    maxBatchSize: 12,
+    supportedCriteria: [
+      'best',
+      'balanced',
+      'profile_order',
+      'conversation_starters',
+      'broad_appeal',
+      'authenticity',
+      'social',
+      'activity',
+      'personality'
+    ],
+    version: '2.1.0',
+    features: {
+      enhancedAnalysis: true,
+      detailedScoring: true,
+      personalityInsights: true,
+      technicalFeedback: true,
+      profilePositioning: true,
+      conversationOptimization: true,
+      appealAnalysis: true,
+      authenticityCheck: true
+    }
+  };
+});
+
+// Update user credit balance, optionally deducting or adding credits
+exports.updateUserCredits = functions.region('us-central1').https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const { creditsToAdd, creditsToDeduct, purchaseDetails } = data;
+  const userId = context.auth.uid;
+  const db = admin.firestore();
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
+      }
+
+      const userData = userDoc.data();
+      let newCredits = userData.credits || 0;
+
+      if (creditsToAdd) {
+        newCredits += creditsToAdd;
+        console.log(`Adding ${creditsToAdd} credits to user ${userId}`);
+      }
+
+      if (creditsToDeduct) {
+        if (userData.isUnlimited) {
+          console.log(`User ${userId} has unlimited plan, not deducting credits`);
+        } else {
+          if (newCredits < creditsToDeduct) {
+            throw new functions.https.HttpsError('failed-precondition', 'Insufficient credits');
+          }
+          newCredits -= creditsToDeduct;
+          console.log(`Deducting ${creditsToDeduct} credits from user ${userId}`);
+        }
+      }
+
+      const updateData = {
+        credits: newCredits,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (creditsToDeduct) {
+        updateData.totalAnalyses = (userData.totalAnalyses || 0) + creditsToDeduct;
+      }
+
+      if (purchaseDetails) {
+        updateData.lastPurchase = {
+          ...purchaseDetails,
+          timestamp: admin.firestore.FieldValue.serverTimestamp()
+        };
+      }
+
+      transaction.update(userRef, updateData);
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating user credits:', error);
+    throw error;
+  }
+});
+
+// Redeem a promotional code for additional credits or unlimited access
+exports.redeemPromoCode = functions.region('us-central1').https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const code = data && data.code ? String(data.code) : '';
+  const cleanCode = code.toUpperCase().trim();
+  if (!cleanCode) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid promo code');
+  }
+
+  const db = admin.firestore();
+  const promoRef = db.collection('promoCodes').doc(cleanCode);
+  const userRef = db.collection('users').doc(context.auth.uid);
+  const userPromoRef = userRef.collection('redeemedPromoCodes').doc(cleanCode);
+
+  let promoData;
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const promoDoc = await transaction.get(promoRef);
+      if (!promoDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'Promo code not found');
+      }
+
+      promoData = promoDoc.data();
+      if (!promoData.isActive) {
+        throw new functions.https.HttpsError('failed-precondition', 'Promo code inactive');
+      }
+
+      if (promoData.expirationDate && promoData.expirationDate.toDate() < new Date()) {
+        throw new functions.https.HttpsError('deadline-exceeded', 'Promo code expired');
+      }
+
+      const currentUses = promoData.currentUses || 0;
+      if (currentUses >= promoData.maxUses) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Promo code usage limit reached');
+      }
+
+      const userPromoDoc = await transaction.get(userPromoRef);
+      if (userPromoDoc.exists) {
+        throw new functions.https.HttpsError('already-exists', 'Promo code already redeemed');
+      }
+
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.data() || {};
+      const currentCredits = userData.credits || 0;
+
+      const updateData = {
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      if (promoData.isUnlimited) {
+        updateData.isUnlimited = true;
+        updateData.unlimitedUntil = promoData.expirationDate;
+        updateData.credits = 999;
+      } else {
+        updateData.credits = currentCredits + promoData.credits;
+      }
+
+      transaction.set(userRef, updateData, { merge: true });
+      transaction.set(userPromoRef, {
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+        creditsAdded: promoData.credits,
+        isUnlimited: promoData.isUnlimited,
+        description: promoData.description,
+      });
+      transaction.update(promoRef, {
+        currentUses: currentUses + 1,
+        lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    return {
+      success: true,
+      credits: promoData.credits,
+      description: promoData.description,
+      isUnlimited: promoData.isUnlimited,
+      expirationDate: promoData.expirationDate.toMillis() / 1000,
+      maxUses: promoData.maxUses,
+    };
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    console.error('Error redeeming promo code:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to redeem promo code');
+  }
+});
