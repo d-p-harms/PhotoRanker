@@ -2,6 +2,7 @@ import UIKit
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseAppCheck
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     private var authStateListener: AuthStateDidChangeListenerHandle?
@@ -10,6 +11,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Configure Firebase - minimal setup
         FirebaseApp.configure()
+#if targetEnvironment(simulator)
+        // Use debug provider for AppCheck when running on a simulator
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+#endif
         print("🔥 Firebase configured successfully")
         
         // Configure Firestore settings for better performance
