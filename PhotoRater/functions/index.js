@@ -8,8 +8,8 @@ const sharp = require('sharp');
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-// Enforce Firebase App Check on all functions
-setGlobalOptions({ region: 'us-central1', enforceAppCheck: true });
+// Set default options for all functions
+setGlobalOptions({ region: 'us-central1' });
 
 // Define the secret for GEMINI_API_KEY
 const geminiKey = defineSecret('GEMINI_API_KEY');
@@ -20,7 +20,6 @@ exports.analyzePhotos = onCall({
   timeoutSeconds: 540,
   memory: '2GiB',
   region: 'us-central1',
-  enforceAppCheck: true,
 }, async (request) => {
   try {
     const { photoUrls, criteria } = request.data;
@@ -311,7 +310,6 @@ function getCriteriaSpecificFallback(criteria, responseText) {
 // GET CONFIG FUNCTION
 exports.getConfig = onCall({
   region: 'us-central1',
-  enforceAppCheck: true,
 }, async (request) => {
   return {
     maxPhotos: 12,
@@ -344,7 +342,6 @@ exports.getConfig = onCall({
 // INITIALIZE USER FUNCTION
 exports.initializeUser = onCall({
   region: 'us-central1',
-  enforceAppCheck: true,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -375,7 +372,6 @@ exports.initializeUser = onCall({
 // REDEEM PROMO CODE FUNCTION
 exports.redeemPromoCode = onCall({
   region: 'us-central1',
-  enforceAppCheck: true,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -440,7 +436,6 @@ exports.redeemPromoCode = onCall({
 // UPDATE USER CREDITS FUNCTION
 exports.updateUserCredits = onCall({
   region: 'us-central1',
-  enforceAppCheck: true,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
