@@ -325,3 +325,120 @@ exports.getConfig = onCall({
   };
 });
 
+// INITIALIZE USER FUNCTION
+exports.initializeUser = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  const launchStart = new Date('2025-07-24T00:00:00Z');
+  const launchEnd = new Date(launchStart);
+  launchEnd.setDate(launchEnd.getDate() + 14);
+  const inLaunch = Date.now() >= launchStart.getTime() && Date.now() < launchEnd.getTime();
+  const startingCredits = inLaunch ? 15 : 3;
+
+  const userRef = admin.firestore().collection('users').doc(uid);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    await userRef.set({
+      freeCredits: startingCredits,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { success: true, newUser: true, freeCredits: startingCredits };
+  }
+
+  return { success: true, newUser: false, freeCredits: userDoc.data().freeCredits };
+});
+
+// REDEEM PROMO CODE FUNCTION
+exports.redeemPromoCode = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  const code = String(request.data?.code || '').toUpperCase().trim();
+  if (!code) {
+    throw new HttpsError('invalid-argument', 'Promo code required');
+  }
+
+  const promoCodes = {
+    'K9X7M3P8Q2W5': {
+      credits: 999,
+      description: 'Unlimited Access',
+      isUnlimited: true,
+      expirationDate: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
+      maxUses: 10,
+    },
+  };
+
+  const details = promoCodes[code];
+  if (!details) {
+    throw new HttpsError('not-found', 'Invalid promo code');
+  }
+  if (Date.now() > details.expirationDate.getTime()) {
+    throw new HttpsError('failed-precondition', 'Promo code expired');
+  }
+
+  const db = admin.firestore();
+  const userPromoRef = db.collection('users').doc(uid).collection('redeemedPromoCodes').doc(code);
+  const globalRef = db.collection('promoCodes').doc(code);
+
+  await db.runTransaction(async (tx) => {
+    const userPromoSnap = await tx.get(userPromoRef);
+    if (userPromoSnap.exists) {
+      throw new HttpsError('already-exists', 'Promo code already redeemed');
+    }
+
+    const globalSnap = await tx.get(globalRef);
+    const uses = (globalSnap.data()?.uses) || 0;
+    if (uses >= details.maxUses) {
+      throw new HttpsError('failed-precondition', 'Promo code usage limit reached');
+    }
+
+    tx.set(userPromoRef, {
+      redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+      creditsAdded: details.credits,
+      isUnlimited: details.isUnlimited,
+      description: details.description,
+    });
+
+    tx.set(globalRef, {
+      uses: uses + 1,
+      lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+
+  return { success: true, promo: { credits: details.credits, isUnlimited: details.isUnlimited } };
+});
+
+// UPDATE USER CREDITS FUNCTION
+exports.updateUserCredits = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  const freeCredits = Number(request.data?.freeCredits);
+  if (!Number.isFinite(freeCredits)) {
+    throw new HttpsError('invalid-argument', 'Valid credit count required');
+  }
+
+  const userRef = admin.firestore().collection('users').doc(uid);
+  await userRef.set({
+    freeCredits,
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return { success: true };
+});
+
