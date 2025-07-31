@@ -103,6 +103,7 @@ exports.analyzePhotos = onCall({
 });
 
 async function analyzeImageWithGemini(photoUrl, criteria, model) {
+  let file;
   try {
     console.log(`Processing photo: ${photoUrl} with criteria: ${criteria}`);
 
@@ -117,7 +118,7 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
     const fileName = filePath ? filePath.split('/').pop() : 'uploaded_photo';
 
     const bucket = admin.storage().bucket();
-    const file = bucket.file(filePath);
+    file = bucket.file(filePath);
     
     const [buffer] = await file.download();
     
@@ -155,6 +156,15 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
     
     const fileName = photoUrl.split('/').pop() || 'photo';
     return createFallbackResponse(fileName, photoUrl, criteria);
+  } finally {
+    if (file) {
+      try {
+        await file.delete({ ignoreNotFound: true });
+        console.log(`Deleted photo ${photoUrl} from storage`);
+      } catch (deleteErr) {
+        console.error('Error deleting file from storage:', deleteErr);
+      }
+    }
   }
 }
 
