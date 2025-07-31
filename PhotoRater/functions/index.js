@@ -4,7 +4,16 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 admin.initializeApp();
 
-const genAI = new GoogleGenerativeAI(functions.config().gemini.api_key);
+// Retrieve the Gemini API key from environment variables instead of
+// relying on runtime config which isn't available in Cloud Functions
+// second generation by default. If the key is missing we log an error
+// so the function fails fast during invocation rather than at startup.
+const geminiApiKey = process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
+  console.error('GEMINI_API_KEY environment variable is not set.');
+}
+
+const genAI = new GoogleGenerativeAI(geminiApiKey || '');
 
 // Enhanced file path parsing with better error handling
 function parseFirebaseStorageUrl(photoUrl) {
