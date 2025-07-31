@@ -121,11 +121,7 @@ class PhotoProcessor: ObservableObject {
     }
     
     private func uploadOptimizedPhotos(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            completion(.failure(NSError(domain: "PhotoProcessor", code: 0,
-                                       userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])))
-            return
-        }
+        let deviceId = DeviceIdManager.shared.deviceId()
         
         let dispatchGroup = DispatchGroup()
         var uploadedUrls: [String] = []
@@ -141,10 +137,10 @@ class PhotoProcessor: ObservableObject {
                 continue
             }
             
-            // SECURITY: User-specific secure file path
+            // SECURITY: Device-specific secure file path
             let timestamp = Int(Date().timeIntervalSince1970)
             let randomId = UUID().uuidString.prefix(8)
-            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
+            let fileName = "ai-analysis/\(deviceId)/\(timestamp)_\(randomId)_\(index).jpg"
             let ref = storage.reference().child(fileName)
             
             // Upload optimized image
