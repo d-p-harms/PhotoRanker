@@ -55,9 +55,11 @@ class PricingManager: ObservableObject {
             for await result in Transaction.all {
                 do {
                     let transaction = try checkVerified(result)
-                    
-                    // Only count non-refunded transactions
-                    guard !transaction.isUpgraded else { continue }
+
+                    // Skip transactions that were revoked or refunded
+                    if let _ = transaction.revocationDate {
+                        continue
+                    }
                     
                     if let productID = ProductID(rawValue: transaction.productID) {
                         if productID.tier.isUnlimited {
