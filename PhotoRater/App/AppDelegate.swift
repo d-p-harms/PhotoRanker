@@ -1,6 +1,7 @@
 import UIKit
 import FirebaseCore
 import FirebaseAuth
+import FirebaseAppCheck
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     private var authStateListener: AuthStateDidChangeListenerHandle?
@@ -8,6 +9,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Configure Firebase
         FirebaseApp.configure()
+#if targetEnvironment(simulator)
+        // Use a debug provider when running in the simulator to avoid
+        // DeviceCheck errors during development.
+        AppCheck.setAppCheckProviderFactory(DebugAppCheckProviderFactory())
+#endif
         
         // Set up authentication state listener
         authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
