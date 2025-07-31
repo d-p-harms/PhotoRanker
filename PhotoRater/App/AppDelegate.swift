@@ -9,9 +9,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Configure Firebase
         FirebaseApp.configure()
-#if targetEnvironment(simulator)
-        // Use a debug provider when running in the simulator to avoid
-        // DeviceCheck errors during development.
+#if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
+        // Use a debug provider when running in the simulator or Mac Catalyst to
+        // avoid DeviceCheck errors during development.
         AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
 #endif
         
