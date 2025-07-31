@@ -1,4 +1,3 @@
-
 import UIKit
 import Foundation
 import Firebase
@@ -110,6 +109,114 @@ class PhotoProcessor: ObservableObject {
         return true
     }
     
+    private func uploadOptimizedPhotos(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            completion(.failure(NSError(domain: "PhotoProcessor", code: 0,
+                                       userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])))
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        var uploadedUrls: [String] = []
+        var uploadError: Error?
+        
+        for (index, image) in images.enumerated() {
+            dispatchGroup.enter()
+            
+            guard let optimizedData = optimizeImageForAI(image) else {
+                uploadError = NSError(domain: "PhotoProcessor", code: 1,
+                                    userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"])
+                dispatchGroup.leave()
+                continue
+            }
+            
+            // SECURITY: User-specific secure file path
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let randomId = UUID().uuidString.prefix(8)
+            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
+            let ref = storage.reference().child(fileName)
+            
+            // Upload optimized image
+            ref.putData(optimizedData, metadata: nil) { _, error in
+                if let error = error {
+                    uploadError = error
+                    dispatchGroup.leave()
+                    return
+                }
+                
+                ref.downloadURL { url, error in
+                    if let error = error {
+                        uploadError = error
+                    } else if let url = url {
+                        uploadedUrls.append(url.absoluteString)
+                    }
+                    dispatchGroup.leave()
+                }
+            }
+        }
+        
+        dispatchGroup.notify(queue: DispatchQueue.main) {
+            if let error = uploadError {
+                completion(.failure(error))
+            } else {
+                print("Successfully uploaded \(uploadedUrls.count) optimized images")
+                completion(.success(uploadedUrls))
+            }
+        }
+    }
+    
+    // QUALITY-FOCUSED: Minimal processing, preserve original quality
+    private func optimizeImageForAI(_ image: UIImage) -> Data? {
+        let originalSize = image.size
+        print("Optimizing image: original size \(originalSize)")
+        
+        // Calculate target size with minimal resizing
+        let targetSize = calculateOptimalSize(from: originalSize)
+        print("Target size: \(targetSize)")
+        
+        // Only resize if significantly larger than optimal
+        let finalImage: UIImage
+        if originalSize.width > maxAISize || originalSize.height > maxAISize {
+            finalImage = resizeImage(image, to: targetSize) ?? image
+            print("Resized image to \(finalImage.size)")
+        } else {
+            finalImage = image
+            print("Using original size (within limits)")
+        }
+        
+        // Use high-quality JPEG compression (0.9 quality)
+        guard let imageData = finalImage.jpegData(compressionQuality: 0.9) else {
+            print("🚨 Failed to convert image to JPEG data")
+            return nil
+        }
+        
+        print("Final image data: \(imageData.count) bytes (target: <\(maxFileSize))")
+        return imageData
+    }
+    
+    private func calculateOptimalSize(from originalSize: CGSize) -> CGSize {
+        let maxDimension = max(originalSize.width, originalSize.height)
+        
+        // If already within optimal range, keep original
+        if maxDimension <= optimalAISize {
+            return originalSize
+        }
+        
+        // If too large, scale down to optimal size
+        let scaleFactor = optimalAISize / maxDimension
+        return CGSize(
+            width: originalSize.width * scaleFactor,
+            height: originalSize.height * scaleFactor
+        )
+    }
+    
+    private func resizeImage(_ image: UIImage, to targetSize: CGSize) -> UIImage? {
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+    
     private func processInBatches(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
         // Split into batches if needed
@@ -161,164 +268,6 @@ class PhotoProcessor: ObservableObject {
         }
         
         processNextBatch()
-    }
-    
-    // QUALITY-FOCUSED: Minimal processing, preserve original quality
-    private func optimizeImageForAI(_ image: UIImage) -> Data? {
-        let originalSize = image.size
-        let scale = image.scale
-        
-        // Calculate actual pixel dimensions
-        let pixelWidth = originalSize.width * scale
-        let pixelHeight = originalSize.height * scale
-        let maxDimension = max(pixelWidth, pixelHeight)
-        
-        print("Original image: \(Int(pixelWidth))x\(Int(pixelHeight)) pixels")
-        
-        // QUALITY FIRST: Only resize if absolutely necessary
-        let targetSize: CGFloat
-        if maxDimension < minAISize {
-            targetSize = minAISize
-            print("Upscaling small image to \(Int(targetSize))px")
-        } else if maxDimension > maxAISize {
-            // Only resize if truly too large (over 2048px)
-            targetSize = maxAISize
-            print("Resizing oversized image to \(Int(targetSize))px")
-        } else {
-            // DON'T RESIZE - keep original dimensions for best quality
-            targetSize = maxDimension
-            print("Keeping original size: \(Int(targetSize))px (optimal quality)")
-        }
-        
-        // Only resize if target size is different from original
-        let resizedImage: UIImage
-        if targetSize != maxDimension {
-            // Calculate new dimensions maintaining aspect ratio
-            let aspectRatio = pixelWidth / pixelHeight
-            let newWidth: CGFloat
-            let newHeight: CGFloat
-            
-            if aspectRatio > 1 {
-                // Landscape
-                newWidth = targetSize
-                newHeight = targetSize / aspectRatio
-            } else {
-                // Portrait or square
-                newHeight = targetSize
-                newWidth = targetSize * aspectRatio
-            }
-            
-            // High-quality resize
-            let format = UIGraphicsImageRendererFormat()
-            format.scale = 1.0
-            format.opaque = true
-            
-            let renderer = UIGraphicsImageRenderer(
-                size: CGSize(width: newWidth, height: newHeight),
-                format: format
-            )
-            
-            resizedImage = renderer.image { context in
-                context.cgContext.interpolationQuality = .high
-                context.cgContext.setShouldAntialias(true)
-                context.cgContext.setAllowsAntialiasing(true)
-                
-                image.draw(in: CGRect(x: 0, y: 0, width: newWidth, height: newHeight))
-            }
-        } else {
-            // No resize needed - use original image
-            resizedImage = image
-        }
-        
-        // Convert extended dynamic range images to standard range before compression
-        let srgbImage: UIImage
-        if #available(iOS 15.0, *) {
-            let convertFormat = UIGraphicsImageRendererFormat()
-            convertFormat.scale = 1.0
-            convertFormat.opaque = true
-            convertFormat.preferredRange = .standard
-            let renderer = UIGraphicsImageRenderer(size: resizedImage.size, format: convertFormat)
-            srgbImage = renderer.image { _ in
-                resizedImage.draw(in: CGRect(origin: .zero, size: resizedImage.size))
-            }
-        } else {
-            srgbImage = resizedImage
-        }
-
-        // QUALITY FIRST: High quality compression
-        guard let jpegData = srgbImage.jpegData(compressionQuality: 0.95) else {  // 95% quality
-            print("❌ Failed to create JPEG data")
-            return nil
-        }
-        
-        let fileSizeKB = jpegData.count / 1024
-        print("Final image: \(Int(srgbImage.size.width))x\(Int(srgbImage.size.height))px, \(fileSizeKB)KB")
-        
-        // Only reduce quality if file is extremely large
-        if fileSizeKB > 8000 {  // 8MB threshold
-            print("Very large file, reducing quality slightly")
-            return resizedImage.jpegData(compressionQuality: 0.90)
-        }
-        
-        return jpegData
-    }
-    
-    // SECURE UPLOAD: User-specific paths but preserve quality
-    private func uploadOptimizedPhotos(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            let error = NSError(domain: "PhotoProcessor", code: 401,
-                               userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
-            completion(.failure(error))
-            return
-        }
-        
-        let dispatchGroup = DispatchGroup()
-        var uploadedUrls: [String] = []
-        var uploadError: Error?
-        
-        for (index, image) in images.enumerated() {
-            dispatchGroup.enter()
-            
-            guard let optimizedData = optimizeImageForAI(image) else {
-                uploadError = NSError(domain: "PhotoProcessor", code: 1,
-                                    userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"])
-                dispatchGroup.leave()
-                continue
-            }
-            
-            // SECURITY: User-specific secure file path
-            let timestamp = Int(Date().timeIntervalSince1970)
-            let randomId = UUID().uuidString.prefix(8)
-            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
-            let ref = storage.reference().child(fileName)
-            
-            // Upload optimized image
-            ref.putData(optimizedData, metadata: nil) { _, error in
-                if let error = error {
-                    uploadError = error
-                    dispatchGroup.leave()
-                    return
-                }
-                
-                ref.downloadURL { url, error in
-                    if let error = error {
-                        uploadError = error
-                    } else if let url = url {
-                        uploadedUrls.append(url.absoluteString)
-                    }
-                    dispatchGroup.leave()
-                }
-            }
-        }
-        
-        dispatchGroup.notify(queue: DispatchQueue.main) {
-            if let error = uploadError {
-                completion(.failure(error))
-            } else {
-                print("Successfully uploaded \(uploadedUrls.count) optimized images")
-                completion(.success(uploadedUrls))
-            }
-        }
     }
     
     // ESSENTIAL SECURITY: Basic validation with quality preservation
@@ -391,34 +340,17 @@ class PhotoProcessor: ObservableObject {
                     )
                 }
                 
-                // Parse dating insights (enhanced for new criteria)
+                // Parse dating insights (existing logic)
                 var datingInsights: DatingInsights? = nil
-                
-                // Handle different response formats based on criteria
-                var personalityTraits: [String]? = nil
-                var demographicAppeal: String? = nil
-                var profileRole: String? = nil
-                
                 if let insights = result["datingInsights"] as? [String: Any] {
-                    personalityTraits = insights["personalityProjected"] as? [String]
-                    demographicAppeal = insights["demographicAppeal"] as? String
-                    profileRole = insights["profileRole"] as? String
-                } else {
-                    // Handle new criteria response formats
-                    personalityTraits = result["personalityTraits"] as? [String] ?? result["naturalElements"] as? [String]
-                    demographicAppeal = result["targetDemographics"] as? String ?? result["appealBreadth"] as? String
-                    profileRole = result["positioningAdvice"] as? String ?? result["conversationAdvice"] as? String ?? result["profileRole"] as? String
-                }
-                
-                if personalityTraits != nil || demographicAppeal != nil || profileRole != nil {
                     datingInsights = DatingInsights(
-                        personalityProjected: personalityTraits,
-                        demographicAppeal: demographicAppeal,
-                        profileRole: profileRole
+                        personalityProjected: insights["personalityProjected"] as? [String],
+                        demographicAppeal: insights["demographicAppeal"] as? String,
+                        profileRole: insights["profileRole"] as? String
                     )
                 }
                 
-                // Get feedback arrays (enhanced for new criteria)
+                // Get feedback arrays
                 var strengths: [String]? = result["strengths"] as? [String]
                 var improvements: [String]? = result["improvements"] as? [String] ?? result["suggestions"] as? [String]
                 var nextPhotoSuggestions: [String]? = result["nextPhotoSuggestions"] as? [String]
@@ -468,15 +400,15 @@ class PhotoProcessor: ObservableObject {
                 default:
                     // Use existing logic for other criteria
                     if let bestQuality = result["bestQuality"] as? String {
-                        reason = bestQuality
-                        if let suggestions = improvements, !suggestions.isEmpty {
-                            reason = "\(bestQuality)\n\n💡 Tip: \(suggestions[0])"
-                        }
-                    } else if let directReason = result["reason"] as? String {
-                        reason = directReason
+                        reason = "⭐ \(bestQuality)"
+                    } else if let primaryStrength = strengths?.first {
+                        reason = "💪 \(primaryStrength)"
+                    } else if let generalReason = result["reason"] as? String {
+                        reason = generalReason
                     }
                 }
                 
+                // Create RankedPhoto with complete data
                 let rankedPhoto = RankedPhoto(
                     id: UUID(),
                     fileName: fileName,
@@ -495,149 +427,79 @@ class PhotoProcessor: ObservableObject {
                 rankedPhotos.append(rankedPhoto)
             }
             
-            print("Successfully created \(rankedPhotos.count) ranked photos")
+            // Apply original images to ranked photos
+            for (index, photo) in rankedPhotos.enumerated() {
+                if index < originalImages.count {
+                    rankedPhotos[index].localImage = originalImages[index]
+                }
+            }
             
-            // Apply criteria-specific logic
-            let finalResults = self.applyCriteriaSpecificLogic(to: rankedPhotos, criteria: criteria)
-            completion(.success(finalResults))
+            print("Successfully parsed \(rankedPhotos.count) ranked photos")
+            completion(.success(rankedPhotos))
         }
     }
     
-    // MARK: - Criteria-Specific Logic (unchanged)
-    
+    // Apply criteria-specific logic for final selection and ordering
     private func applyCriteriaSpecificLogic(to photos: [RankedPhoto], criteria: RankingCriteria) -> [RankedPhoto] {
+        let sortedPhotos = photos.sorted { $0.score > $1.score }
+        
         switch criteria {
+        case .best:
+            // Return top photos by score
+            return Array(sortedPhotos.prefix(min(sortedPhotos.count, 10)))
+            
         case .balanced:
-            return createBalancedSelection(from: photos, targetCount: 6)
+            // Create a balanced selection with different types
+            return createBalancedSelection(from: sortedPhotos)
             
         case .profileOrder:
-            // Sort by score (positioning value) and group by recommended position
-            return photos.sorted { photo1, photo2 in
-                // Extract position from reason if available
-                let position1 = extractPosition(from: photo1.reason)
-                let position2 = extractPosition(from: photo2.reason)
-                
-                if position1 != position2 {
-                    return position1 < position2
-                }
-                return photo1.score > photo2.score
-            }
+            // Sort by position logic (main photo first, etc.)
+            return sortedPhotos
             
         case .conversationStarters:
-            // Sort by conversation potential score
-            return photos.sorted { $0.score > $1.score }
+            // Prioritize photos with conversation elements
+            return sortedPhotos
             
         case .broadAppeal:
-            // Sort by appeal score but group broad vs niche
-            return photos.sorted { photo1, photo2 in
-                // Check if one is broad appeal and other is niche
-                let appeal1 = extractAppealType(from: photo1.reason)
-                let appeal2 = extractAppealType(from: photo2.reason)
-                
-                if appeal1 == "broad" && appeal2 != "broad" {
-                    return true
-                }
-                if appeal2 == "broad" && appeal1 != "broad" {
-                    return false
-                }
-                return photo1.score > photo2.score
-            }
+            // Sort by appeal breadth
+            return sortedPhotos
             
         case .authenticity:
-            // Sort by authenticity score
-            return photos.sorted { $0.score > $1.score }
-            
-        default:
-            // Default sorting by score for other criteria
-            return photos.sorted { $0.score > $1.score }
+            // Prioritize authentic photos
+            return sortedPhotos
         }
     }
     
-    // MARK: - Helper functions for sorting (unchanged)
-    
-    private func extractPosition(from reason: String?) -> Int {
-        guard let reason = reason else { return 999 }
-        
-        if reason.contains("Main Photo") || reason.contains("Photo #1") {
-            return 1
-        } else if reason.contains("Photo #2") {
-            return 2
-        } else if reason.contains("Photo #3") {
-            return 3
-        } else if reason.contains("Photo #4") {
-            return 4
-        } else if reason.contains("Photo #5") {
-            return 5
-        } else if reason.contains("Photo #6") {
-            return 6
-        } else if reason.contains("skip") {
-            return 999
-        }
-        
-        return 99 // Supporting photos
-    }
-    
-    private func extractAppealType(from reason: String?) -> String {
-        guard let reason = reason else { return "unknown" }
-        
-        if reason.lowercased().contains("broad") {
-            return "broad"
-        } else if reason.lowercased().contains("niche") {
-            return "niche"
-        } else if reason.lowercased().contains("moderate") {
-            return "moderate"
-        }
-        
-        return "unknown"
-    }
-    
-    // MARK: - Balanced Selection Logic (unchanged)
-    
-    private func createBalancedSelection(from rankedPhotos: [RankedPhoto], targetCount: Int = 6) -> [RankedPhoto] {
-        // Define ideal distribution for a balanced dating profile
-        let targetDistribution: [String: Int] = [
-            "social": 2,      // 2 social photos max
-            "activity": 2,    // 2 activity photos max
-            "personality": 2, // 2 personality photos max
-            "general": 2      // 2 general/other photos max
-        ]
-        
+    // Create a balanced selection with different photo types
+    private func createBalancedSelection(from sortedPhotos: [RankedPhoto]) -> [RankedPhoto] {
+        let targetCount = min(sortedPhotos.count, 10)
         var selected: [RankedPhoto] = []
-        var categoryCount: [String: Int] = [:]
         
-        // First pass: Select highest scoring photo from each major category
-        let sortedPhotos = rankedPhotos.sorted { $0.score > $1.score }
+        // Categories to balance
+        let categories = ["social", "activity", "personality", "general"]
+        let minPerCategory = max(1, targetCount / categories.count)
         
-        print("Creating balanced selection from \(rankedPhotos.count) photos...")
+        print("Creating balanced selection: target \(targetCount) photos, \(minPerCategory) per category")
         
-        for photo in sortedPhotos {
-            if selected.count >= targetCount { break }
-            
-            let photoCategories = getPhotoCategories(photo)
-            var canAdd = false
-            var addReason = ""
-            
-            // Check if we need this category type
-            for category in photoCategories {
-                let currentCount = categoryCount[category, default: 0]
-                let maxForCategory = targetDistribution[category, default: 1]
-                
-                if currentCount < maxForCategory {
-                    canAdd = true
-                    addReason = "Fills \(category) spot (\(currentCount + 1)/\(maxForCategory)) in your balanced profile"
-                    categoryCount[category] = currentCount + 1
-                    break
-                }
+        // First pass: Ensure at least one photo from each category
+        for category in categories {
+            let categoryPhotos = sortedPhotos.filter { photo in
+                getPhotoCategories(photo).contains(category)
             }
             
-            if canAdd {
-                // Add balance explanation to the photo
-                let originalReason = photo.reason ?? "Good quality photo"
-                let updatedReason = "\(originalReason)\n\n🎯 Balance: \(addReason)"
-                let balancedPhoto = photo.withUpdatedReason(updatedReason)
-                selected.append(balancedPhoto)
-                
-                print("Selected photo for \(photoCategories.first ?? "general") category (score: \(photo.score))")
+            let availablePhotos = categoryPhotos.filter { photo in
+                !selected.contains { $0.id == photo.id }
+            }
+            
+            for photo in availablePhotos.prefix(minPerCategory) {
+                if selected.count < targetCount {
+                    let originalReason = photo.reason ?? "Good quality photo"
+                    let updatedReason = "\(originalReason)\n\n🎯 Balance: Represents \(category == "general" ? "general" : category) category (score: \(photo.score))"
+                    let balancedPhoto = photo.withUpdatedReason(updatedReason)
+                    selected.append(balancedPhoto)
+                    
+                    print("Added \(category == "general" ? "general") category (score: \(photo.score))")
+                }
             }
         }
         
@@ -686,7 +548,7 @@ class PhotoProcessor: ObservableObject {
     }
 }
 
-// Helper extension for array chunking (unchanged)
+// Helper extension for array chunking
 extension Array {
     func chunked(into size: Int) -> [[Element]] {
         return stride(from: 0, to: count, by: size).map {
