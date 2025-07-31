@@ -230,14 +230,29 @@ class PhotoProcessor: ObservableObject {
             resizedImage = image
         }
         
+        // Convert extended dynamic range images to standard range before compression
+        let srgbImage: UIImage
+        if #available(iOS 15.0, *) {
+            let convertFormat = UIGraphicsImageRendererFormat()
+            convertFormat.scale = 1.0
+            convertFormat.opaque = true
+            convertFormat.preferredRange = .standard
+            let renderer = UIGraphicsImageRenderer(size: resizedImage.size, format: convertFormat)
+            srgbImage = renderer.image { _ in
+                resizedImage.draw(in: CGRect(origin: .zero, size: resizedImage.size))
+            }
+        } else {
+            srgbImage = resizedImage
+        }
+
         // QUALITY FIRST: High quality compression
-        guard let jpegData = resizedImage.jpegData(compressionQuality: 0.95) else {  // 95% quality
+        guard let jpegData = srgbImage.jpegData(compressionQuality: 0.95) else {  // 95% quality
             print("❌ Failed to create JPEG data")
             return nil
         }
         
         let fileSizeKB = jpegData.count / 1024
-        print("Final image: \(Int(resizedImage.size.width))x\(Int(resizedImage.size.height))px, \(fileSizeKB)KB")
+        print("Final image: \(Int(srgbImage.size.width))x\(Int(srgbImage.size.height))px, \(fileSizeKB)KB")
         
         // Only reduce quality if file is extremely large
         if fileSizeKB > 8000 {  // 8MB threshold

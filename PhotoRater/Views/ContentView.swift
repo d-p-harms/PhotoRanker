@@ -95,7 +95,6 @@ struct ContentView: View {
             VStack(spacing: 6) {
                 mainCreditsRow
                 launchPromotionDisplay
-                creditsButtonsRow
                 launchPromotionIndicator
             }
             .padding(.horizontal, 16)
@@ -137,23 +136,15 @@ struct ContentView: View {
     private var launchPromotionDisplay: some View {
         if isLaunchPeriod && !pricingManager.isUnlimited {
             VStack(spacing: 4) {
-                HStack(spacing: 6) {
-                    Text("🎉 Launch Special: 50% off all credits!")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.green)
-                    
-                    Button("Enter Promo Code") {
-                        showingPromoCodeView = true
-                    }
+                Text("🎉 Launch Special: 50% off all credits!")
                     .font(.caption)
-                    .foregroundColor(.blue)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(8)
-                
+                    .fontWeight(.medium)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+
                 Text("Ends August 24, 2025")
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -161,34 +152,6 @@ struct ContentView: View {
         }
     }
     
-    @ViewBuilder
-    private var creditsButtonsRow: some View {
-        if !pricingManager.isUnlimited {
-            HStack(spacing: 8) {
-                Button("Get More") {
-                    showingPricingView = true
-                }
-                .font(.caption)
-                .foregroundColor(.blue)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
-                .frame(minWidth: 80, maxWidth: .infinity)
-                
-                Button("Promo Code") {
-                    showingPromoCodeView = true
-                }
-                .font(.caption)
-                .foregroundColor(.green)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(8)
-                .frame(minWidth: 80, maxWidth: .infinity)
-            }
-        }
-    }
     
     @ViewBuilder
     private var launchPromotionIndicator: some View {
