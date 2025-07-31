@@ -11,11 +11,5 @@
         "*.local"
       ]
     }
-  ],
-  "emulators": {
-    "functions": { "host": "localhost", "port": 5001 },
-    "firestore": { "host": "localhost", "port": 8080 },
-    "auth": { "host": "localhost", "port": 9099 },
-    "storage": { "host": "localhost", "port": 9199 }
-  }
+  ]
 }
