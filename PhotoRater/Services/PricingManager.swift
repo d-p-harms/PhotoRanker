@@ -16,20 +16,13 @@ class PricingManager: ObservableObject {
     private var purchasedCredits: Int = 0
     private var freeCredits: Int = 0
     
+    // Toggle automatic purchase restoration based on the build environment
+    /// Disable automatic restoration in the simulator to avoid the Apple ID
+    /// prompt. Switch this back for App Store builds.
+    /// Enable automatic restoration on physical devices.
+
+    /// Shared singleton instance
     static let shared = PricingManager()
-
-#if targetEnvironment(simulator)
-    /// Disable automatic purchase restoration on the simulator to avoid the
-    /// Apple ID prompt. Toggle back for App Store builds.
-    static let shouldAutoRestorePurchases = false
-#else
-    /// Enable automatic purchase restoration on physical devices.
-    static let shouldAutoRestorePurchases = true
-#endif
-    private var updateListenerTask: Task<Void, Error>?
-
-    // MARK: - Product Metadata
-
     /// The available pricing tiers for in-app purchases
     enum PricingTier {
         case starter       // $0.99 for 20 photos
@@ -92,10 +85,8 @@ class PricingManager: ObservableObject {
         
         Task {
             await loadProducts()
-            if PricingManager.shouldAutoRestorePurchases {
-                await restoreAllPurchasesFromApple() // Check Apple first
-            }
-            await loadFreeCreditsFromFirebase()   // Then load any saved free credits
+            await restoreAllPurchasesFromApple() // CRITICAL: Always check Apple first
+            await loadFreeCreditsFromFirebase()   // Then load free credits
             await MainActor.run {
                 self.isInitialized = true
             }
