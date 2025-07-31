@@ -16,7 +16,7 @@ struct PrivacyPolicyView: View {
                         .font(.body)
 
                     SectionHeader("Storage")
-                    Text("Photos and analysis results are temporarily stored in Firebase to sync across your devices. Data is retained for up to 30 days then automatically deleted.")
+                    Text("Photos you upload are used only for analysis. They are deleted from Firebase immediately after processing, and the analysis results are returned directly to your device without being stored on our servers.")
                         .font(.body)
 
                     SectionHeader("Sharing")
