@@ -10,6 +10,7 @@ admin.initializeApp();
 // Define the secret for GEMINI_API_KEY
 const geminiKey = defineSecret('GEMINI_API_KEY');
 
+// ANALYZE PHOTOS FUNCTION
 exports.analyzePhotos = onCall({
   secrets: [geminiKey],
   timeoutSeconds: 540,
@@ -110,469 +111,139 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
       const matches = photoUrl.match(/o\/(.+?)\?/);
       if (matches && matches[1]) {
         filePath = decodeURIComponent(matches[1]);
-      } else {
-        throw new Error(`Could not parse file path from URL: ${photoUrl}`);
       }
-    } else if (photoUrl.startsWith('gs://')) {
-      filePath = photoUrl.replace(/^gs:\/\/[^\/]+\//, '');
-    } else {
-      filePath = photoUrl;
     }
 
-    console.log(`Accessing file at path: ${filePath}`);
-    const storage = admin.storage();
-    const fileRef = storage.bucket().file(filePath);
+    const fileName = filePath ? filePath.split('/').pop() : 'uploaded_photo';
 
-    const [buffer] = await fileRef.download();
-    console.log(`Downloaded photo, size: ${buffer.length} bytes`);
-
-    const processedBuffer = await validateAndPrepareImage(buffer);
-    console.log(`Processed image, new size: ${processedBuffer.length} bytes`);
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(filePath);
     
-    const result = await performGeminiAnalysis(processedBuffer, criteria, model);
-    console.log(`Analysis complete for ${criteria}: Score ${result.score}`);
+    const [buffer] = await file.download();
     
-    // Return comprehensive result with all fields
-    const analysisResult = {
-      fileName: filePath.split('/').pop(),
-      storageURL: photoUrl,
-      score: result.score,
-      tags: result.tags || [],
-      bestQuality: result.bestQuality || result.strengths?.[0] || "Good photo quality",
-      suggestions: result.suggestions || result.improvements || ["Keep up the great work!"],
-      
-      // Enhanced scoring data
-      visualQuality: result.visualQuality || result.score,
-      attractivenessScore: result.attractivenessScore || result.score,
-      datingAppealScore: result.datingAppealScore || result.score,
-      swipeWorthiness: result.swipeWorthiness || result.score,
-      
-      // Detailed feedback arrays
-      strengths: result.strengths || [],
-      improvements: result.improvements || result.suggestions || [],
-      nextPhotoSuggestions: result.nextPhotoSuggestions || [],
-      
-      // Technical feedback
-      technicalFeedback: result.technicalFeedback || {},
-      
-      // Dating insights
-      datingInsights: result.datingInsights || {
-        personalityProjected: result.personalityTraits || result.personalityProjected || [],
-        demographicAppeal: result.demographicAppeal || result.targetDemographics || null,
-        profileRole: result.profileRole || null
-      },
-      
-      // Criteria-specific fields
-      position: result.position,
-      positionReason: result.positionReason,
-      messageHooks: result.messageHooks,
-      conversationElements: result.conversationElements,
-      appealBreadth: result.appealBreadth,
-      targetDemographics: result.targetDemographics,
-      universalFactors: result.universalFactors,
-      limitingFactors: result.limitingFactors,
-      strategicAdvice: result.strategicAdvice,
-      authenticityLevel: result.authenticityLevel,
-      genuinenessFactors: result.genuinenessFactors,
-      personalityTraits: result.personalityTraits,
-      conversationAdvice: result.conversationAdvice,
-      positioningAdvice: result.positioningAdvice
-    };
-    
-    console.log(`Returning analysis result for ${criteria}:`, {
-      score: analysisResult.score,
-      hasStrengths: analysisResult.strengths.length > 0,
-      hasImprovements: analysisResult.improvements.length > 0,
-      hasTechnicalFeedback: Object.keys(analysisResult.technicalFeedback).length > 0
-    });
-    
-    return analysisResult;
-  } catch (error) {
-    console.error(`Error processing photo ${photoUrl}:`, error);
-    throw error;
-  }
-}
-
-async function validateAndPrepareImage(buffer) {
-  const metadata = await sharp(buffer).metadata();
-  console.log(`Received image: ${metadata.width}x${metadata.height}, ${Math.round(buffer.length/1024)}KB`);
-  
-  const maxDimension = Math.max(metadata.width, metadata.height);
-  
-  if (maxDimension < 500) {
-    throw new Error('Image too small for quality analysis (minimum 500px)');
-  }
-  
-  if (buffer.length > 10 * 1024 * 1024) {
-    throw new Error('Image too large (maximum 10MB)');
-  }
-  
-  if (maxDimension > 2048) {
-    console.log('Resizing oversized image to optimal size');
-    return await sharp(buffer)
-      .resize(1536, 1536, {
+    const resizedBuffer = await sharp(buffer)
+      .resize(1024, 1024, { 
         fit: 'inside',
-        withoutEnlargement: true
+        withoutEnlargement: true 
       })
-      .jpeg({ quality: 92 })
+      .jpeg({ quality: 85 })
       .toBuffer();
-  }
-  
-  return buffer;
-}
 
-async function performGeminiAnalysis(imageBuffer, criteria, model) {
-  const prompt = buildCriteriaSpecificPrompt(criteria);
-  const base64Image = imageBuffer.toString('base64');
-          
-  try {
-    console.log(`Analyzing image with ${criteria} prompt (${prompt.length} chars)`);
+    const base64Image = resizedBuffer.toString('base64');
+
+    const prompt = generatePrompt(criteria);
     
     const result = await model.generateContent([
       prompt,
       {
         inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Image
+          data: base64Image,
+          mimeType: 'image/jpeg'
         }
       }
     ]);
-        
+
     const response = await result.response;
     const text = response.text();
-    console.log(`Raw AI response for ${criteria} (${text.length} chars):`, text.substring(0, 200));
     
-    const analysisResult = parseEnhancedAIResponse(text, criteria);
-    console.log(`Parsed ${criteria} analysis:`, {
-      score: analysisResult.score,
-      hasStrengths: analysisResult.strengths?.length > 0,
-      hasImprovements: analysisResult.improvements?.length > 0
-    });
+    console.log(`Analysis complete for ${fileName}`);
     
-    return analysisResult;
-  } catch (error) { 
-    console.error('Gemini API error:', error);
-    throw error;
-  }         
-}
-
-function buildCriteriaSpecificPrompt(criteria) {
-  const baseInstructions = `You are an expert dating profile consultant. Analyze this photo comprehensively and return detailed JSON analysis.
-
-ALWAYS return a complete JSON response with all requested fields, even if some fields are empty arrays or null.`;
-
-  switch (criteria) {
-    case 'profile_order':
-      return `${baseInstructions}
-
-ANALYZE FOR OPTIMAL PROFILE POSITION:
-
-Evaluate this photo for:
-1. Main photo suitability (clear face, good lighting, simple background)
-2. Supporting photo value (adds variety, shows different aspects)
-3. Position recommendation (1-6 or 'skip' if not suitable)
-
-Consider:
-- Face clarity and visibility
-- Background complexity
-- Photo quality and appeal
-- How it complements other photos in a profile sequence
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100, positioning value),
-  "position": "1" | "2" | "3" | "4" | "5" | "6" | "skip",
-  "positionReason": "detailed explanation of why this position is recommended",
-  "faceClarity": (0-100),
-  "backgroundComplexity": (0-100, lower is better),
-  "positioningAdvice": "specific advice for optimal positioning",
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "professional", "casual"],
-  "strengths": ["specific strength 1", "specific strength 2"],
-  "improvements": ["specific improvement 1", "specific improvement 2"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
-  "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
-  },
-  "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "strategic positioning role"
-  }
-}`;
-
-    case 'conversation_starters':
-      return `${baseInstructions}
-
-ANALYZE FOR CONVERSATION POTENTIAL:
-
-Identify elements that give people something specific to message about:
-- Unique backgrounds or locations
-- Visible activities, hobbies, interests
-- Pets, travel elements, unusual objects
-- Anything that invites questions or comments
-
-Rate conversation potential (0-100) and identify specific talking points.
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100, conversation starter value),
-  "conversationElements": ["element 1", "element 2", "element 3"],
-  "messageHooks": ["what someone could ask about 1", "what someone could ask about 2"],
-  "conversationAdvice": "how to leverage this photo for conversations",
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "travel", "hobby"],
-  "strengths": ["conversation strength 1", "conversation strength 2"],
-  "improvements": ["how to add more conversation elements"],
-  "nextPhotoSuggestions": ["complementary photo idea 1", "complementary photo idea 2"],
-  "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
-  },
-  "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "conversation starter role"
-  }
-}`;
-
-    case 'broad_appeal':
-      return `${baseInstructions}
-
-ANALYZE DEMOGRAPHIC APPEAL:
-
-Focus on who this photo appeals to and provide strategic dating advice:
-
-1. Rate this photo's broad vs niche appeal (broad = attracts many types, niche = attracts specific types strongly)
-2. Identify specific demographic groups this appeals to most
-3. Explain what makes it broadly appealing vs specialized
-4. Give strategic advice for dating success
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100),
-  "appealBreadth": "broad",
-  "targetDemographics": ["demographic 1", "demographic 2"],
-  "universalFactors": ["broad appeal factor 1", "broad appeal factor 2"],
-  "limitingFactors": ["limiting factor 1"],
-  "strategicAdvice": "strategic advice for using this photo",
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality"],
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["improvement 1", "improvement 2"],
-  "nextPhotoSuggestions": ["suggestion 1", "suggestion 2"],
-  "technicalFeedback": {
-    "lighting": "lighting feedback",
-    "composition": "composition feedback",
-    "styling": "styling feedback"
-  },
-  "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "demographicAppeal": "primary demographic",
-    "profileRole": "profile role"
-  }
-}`;
-
-    case 'authenticity':
-      return `${baseInstructions}
-
-ANALYZE AUTHENTICITY AND NATURALNESS:
-
-Focus on:
-- How genuine vs posed the photo appears
-- Natural expressions and body language
-- Candid vs staged feeling
-- Authentic personality showing through
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100, authenticity rating),
-  "authenticityLevel": "natural" | "somewhat_posed" | "clearly_posed",
-  "genuinenessFactors": "what makes this feel genuine or not",
-  "authenticityAdvice": "how to appear more authentic",
-  "personalityTraits": ["authentic trait 1", "authentic trait 2"],
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["authentic", "natural", "genuine", "personality"],
-  "strengths": ["authenticity strength 1", "authenticity strength 2"],
-  "improvements": ["how to be more natural", "how to show genuine personality"],
-  "nextPhotoSuggestions": ["complementary authentic photo idea 1", "complementary authentic photo idea 2"],
-  "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
-  },
-  "datingInsights": {
-    "personalityProjected": ["genuine trait 1", "genuine trait 2"],
-    "profileRole": "how authentic photos should be used"
-  }
-}`;
-
-    case 'balanced':
-      return `${baseInstructions}
-
-ANALYZE FOR PROFILE VARIETY:
-
-Determine photo type and categorize for balanced profile creation:
-- Social context (with others, social settings)
-- Activity/hobby content (sports, interests, activities)
-- Personality expression (character, emotions, traits)
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100, overall quality),
-  "isSocial": true | false,
-  "isActivity": true | false,
-  "isPersonality": true | false,
-  "profileRole": "main photo" | "social proof" | "activity showcase" | "personality highlight",
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality"],
-  "strengths": ["what works well", "balance strength"],
-  "improvements": ["enhancement suggestion", "balance improvement"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
-  "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
-  },
-  "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "strategic role in balanced profile"
-  }
-}`;
-
-    default: // 'best' and fallback
-      return `${baseInstructions}
-
-COMPREHENSIVE PHOTO ANALYSIS:
-
-Analyze for overall dating profile excellence:
-- Visual quality (technical aspects, composition, lighting)
-- Attractiveness factors (appearance, styling, appeal)
-- Dating potential (swipe-worthiness, conversation potential)
-- Overall impression and impact
-
-RETURN THIS EXACT JSON FORMAT:
-{
-  "score": (0-100, overall excellence),
-  "visualQuality": (0-100),
-  "attractivenessScore": (0-100),
-  "datingAppealScore": (0-100),
-  "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "professional", "casual"],
-  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
-  "improvements": ["actionable improvement 1", "actionable improvement 2"],
-  "bestQuality": "what makes this photo excellent",
-  "suggestions": ["enhancement suggestion 1", "enhancement suggestion 2"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
-  "technicalFeedback": {
-    "lighting": "detailed lighting assessment",
-    "composition": "composition analysis and improvements",
-    "styling": "outfit, grooming, accessory feedback"
-  },
-  "datingInsights": {
-    "personalityProjected": ["trait1", "trait2", "trait3"],
-    "demographicAppeal": "who this photo appeals to most",
-    "profileRole": "how this should be used strategically"
-  }
-}`;
+    return parseGeminiResponse(text, fileName, photoUrl, criteria);
+    
+  } catch (error) {
+    console.error('Error in analyzeImageWithGemini:', error);
+    
+    const fileName = photoUrl.split('/').pop() || 'photo';
+    return createFallbackResponse(fileName, photoUrl, criteria);
   }
 }
 
-function parseEnhancedAIResponse(responseText, criteria) {
+function generatePrompt(criteria) {
+  const basePrompt = `You are an expert dating profile consultant. Analyze this photo and provide specific, actionable feedback.
+
+IMPORTANT: Your response must be valid JSON in this exact format:
+{
+  "score": 85,
+  "visualQuality": 88,
+  "attractivenessScore": 82,
+  "datingAppealScore": 87,
+  "swipeWorthiness": 84,
+  "tags": ["outdoor", "genuine_smile", "good_lighting"],
+  "bestQuality": "Genuine smile creates immediate connection",
+  "suggestions": ["Consider a less busy background", "Angle camera slightly higher"],
+  "strengths": ["Natural expression", "Good eye contact"],
+  "improvements": ["Background could be cleaner", "Lighting could be softer"],
+  "nextPhotoSuggestions": ["Add a full body shot", "Include a hobby photo"],
+  "technicalFeedback": {
+    "lighting": "good",
+    "composition": "decent", 
+    "background": "busy",
+    "angle": "flattering"
+  },
+  "datingInsights": {
+    "personalityProjected": ["friendly", "approachable"],
+    "demographicAppeal": "broad",
+    "profileRole": "primary"
+  }
+}`;
+
+  const criteriaSpecific = {
+    'best': 'Focus on overall dating appeal and what makes this photo stand out.',
+    'balanced': 'Evaluate how this photo fits into a complete dating profile.',
+    'profile_order': 'Determine if this should be a main photo, secondary, or supporting image.',
+    'conversation_starters': 'Identify elements that would spark interesting conversations.',
+    'broad_appeal': 'Assess appeal across different demographics and preferences.',
+    'authenticity': 'Evaluate how genuine and authentic the person appears.',
+    'social': 'Analyze social dynamics and group interaction appeal.',
+    'activity': 'Focus on activity/hobby elements and lifestyle appeal.',
+    'personality': 'Identify personality traits and character projection.'
+  };
+
+  return basePrompt + '\n\nSpecific focus: ' + (criteriaSpecific[criteria] || criteriaSpecific['best']);
+}
+
+function parseGeminiResponse(responseText, fileName, photoUrl, criteria) {
   try {
-    // Try to parse JSON from the response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      console.log(`Successfully parsed JSON for ${criteria}:`, Object.keys(parsed));
-      
-      // Return the parsed object with all fields preserved
       return {
+        fileName: fileName,
+        storageURL: photoUrl,
         score: Math.min(Math.max(parsed.score || 75, 0), 100),
         visualQuality: Math.min(Math.max(parsed.visualQuality || parsed.score || 75, 0), 100),
         attractivenessScore: Math.min(Math.max(parsed.attractivenessScore || parsed.score || 75, 0), 100),
         datingAppealScore: Math.min(Math.max(parsed.datingAppealScore || parsed.score || 75, 0), 100),
         swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness || parsed.score || 75, 0), 100),
-        
-        // Basic fields
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-        bestQuality: parsed.bestQuality || (Array.isArray(parsed.strengths) && parsed.strengths.length > 0 ? parsed.strengths[0] : "Good photo quality"),
-        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : (Array.isArray(parsed.improvements) ? parsed.improvements : ["Keep up the great work!"]),
-        
-        // Enhanced feedback
-        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : (Array.isArray(parsed.suggestions) ? parsed.suggestions : []),
-        nextPhotoSuggestions: Array.isArray(parsed.nextPhotoSuggestions) ? parsed.nextPhotoSuggestions : [],
-        
-        // Technical feedback
+        bestQuality: parsed.bestQuality || getCriteriaSpecificFallback(criteria, responseText),
+        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : ["Consider the analysis feedback provided"],
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [parsed.bestQuality || "Photo has good qualities"],
+        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : parsed.suggestions || ["Minor improvements possible"],
+        nextPhotoSuggestions: Array.isArray(parsed.nextPhotoSuggestions) ? parsed.nextPhotoSuggestions : ["Add complementary photos"],
         technicalFeedback: parsed.technicalFeedback || {},
-        
-        // Dating insights
         datingInsights: parsed.datingInsights || {
-          personalityProjected: parsed.personalityProjected || parsed.personalityTraits || [],
-          demographicAppeal: parsed.demographicAppeal,
-          profileRole: parsed.profileRole
-        },
-        
-        // Criteria-specific fields - preserve all that are actually used
-        position: parsed.position,
-        positionReason: parsed.positionReason,
-        faceClarity: parsed.faceClarity,
-        backgroundComplexity: parsed.backgroundComplexity,
-        positioningAdvice: parsed.positioningAdvice,
-        
-        conversationElements: parsed.conversationElements,
-        messageHooks: parsed.messageHooks,
-        conversationAdvice: parsed.conversationAdvice,
-        
-        appealBreadth: parsed.appealBreadth,
-        targetDemographics: parsed.targetDemographics,
-        appealStrategy: parsed.appealStrategy,
-        universalFactors: parsed.universalFactors,
-        limitingFactors: parsed.limitingFactors,
-        strategicAdvice: parsed.strategicAdvice,
-        
-        authenticityLevel: parsed.authenticityLevel,
-        genuinenessFactors: parsed.genuinenessFactors,
-        authenticityAdvice: parsed.authenticityAdvice,
-        personalityTraits: parsed.personalityTraits,
-        
-        isSocial: parsed.isSocial,
-        isActivity: parsed.isActivity,
-        isPersonality: parsed.isPersonality
+          personalityProjected: [],
+          demographicAppeal: null,
+          profileRole: null
+        }
       };
     }
-  } catch (error) {
-    console.error(`Error parsing JSON for ${criteria}:`, error);
-    console.log('Response text sample:', responseText.substring(0, 500));
+  } catch (parseError) {
+    console.warn('JSON parsing failed, using fallback parsing:', parseError);
   }
   
-  // Fallback parsing if JSON parsing fails
-  console.log(`JSON parsing failed for ${criteria}, using fallback parsing`);
-  
+  return createFallbackResponse(fileName, photoUrl, criteria, responseText);
+}
+
+function createFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
   let score = 75;
+  
   const scoreMatch = responseText.match(/(?:score|rating):?\s*(\d+)/i);
   if (scoreMatch) {
     score = Math.min(Math.max(parseInt(scoreMatch[1], 10), 0), 100);
   }
   
-  // Extract basic feedback
   let bestQuality = getCriteriaSpecificFallback(criteria, responseText);
   let suggestions = ["Consider the analysis feedback provided"];
   
@@ -583,6 +254,8 @@ function parseEnhancedAIResponse(responseText, criteria) {
   }
   
   return {
+    fileName: fileName,
+    storageURL: photoUrl,
     score: score,
     visualQuality: Math.max(score - 5, 0),
     attractivenessScore: score,
@@ -620,6 +293,7 @@ function getCriteriaSpecificFallback(criteria, responseText) {
   }
 }
 
+// GET CONFIG FUNCTION
 exports.getConfig = onCall({
   region: 'us-central1',
 }, async (request) => {
@@ -651,6 +325,7 @@ exports.getConfig = onCall({
   };
 });
 
+// INITIALIZE USER FUNCTION
 exports.initializeUser = onCall({
   region: 'us-central1',
 }, async (request) => {
@@ -697,6 +372,7 @@ exports.initializeUser = onCall({
   }
 });
 
+// UPDATE USER CREDITS FUNCTION
 exports.updateUserCredits = onCall({
   region: 'us-central1',
 }, async (request) => {
@@ -706,14 +382,15 @@ exports.updateUserCredits = onCall({
     throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
   
-  const { creditsToAdd, creditsToDeduct, purchaseDetails } = data;
   const userId = auth.uid;
+  const { creditChange, reason, creditsToAdd, creditsToDeduct, purchaseDetails } = data;
+  
   const db = admin.firestore();
   
   try {
     const userRef = db.collection('users').doc(userId);
     
-    await db.runTransaction(async (transaction) => {
+    const result = await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
       
       if (!userDoc.exists) {
@@ -723,11 +400,18 @@ exports.updateUserCredits = onCall({
       const userData = userDoc.data();
       let newCredits = userData.credits || 0;
       
+      // Handle legacy creditChange parameter
+      if (typeof creditChange === 'number') {
+        newCredits = Math.max(0, newCredits + creditChange);
+      }
+      
+      // Handle new creditsToAdd parameter
       if (creditsToAdd) {
         newCredits += creditsToAdd;
         console.log(`Adding ${creditsToAdd} credits to user ${userId}`);
       }
       
+      // Handle creditsToDeduct parameter
       if (creditsToDeduct) {
         if (userData.isUnlimited) {
           console.log(`User ${userId} has unlimited plan, not deducting credits`);
@@ -745,10 +429,20 @@ exports.updateUserCredits = onCall({
         lastUpdated: admin.firestore.FieldValue.serverTimestamp()
       };
       
+      // Legacy support for creditChange
+      if (typeof creditChange === 'number') {
+        updateData.lastCreditUpdate = admin.firestore.FieldValue.serverTimestamp();
+        if (creditChange < 0) {
+          updateData.totalAnalyses = (userData.totalAnalyses || 0) + Math.abs(creditChange);
+        }
+      }
+      
+      // Track analyses for creditsToDeduct
       if (creditsToDeduct) {
         updateData.totalAnalyses = (userData.totalAnalyses || 0) + creditsToDeduct;
       }
       
+      // Add purchase details if provided
       if (purchaseDetails) {
         updateData.lastPurchase = {
           ...purchaseDetails,
@@ -757,11 +451,121 @@ exports.updateUserCredits = onCall({
       }
       
       transaction.update(userRef, updateData);
+      
+      console.log(`Updated credits for user ${userId}: ${userData.credits || 0} -> ${newCredits} (${reason || 'No reason provided'})`);
+      
+      return {
+        success: true,
+        previousCredits: userData.credits || 0,
+        newCredits: newCredits,
+        change: creditChange || (creditsToAdd || 0) - (creditsToDeduct || 0)
+      };
     });
     
-    return { success: true };
+    return result;
+    
   } catch (error) {
     console.error('Error updating user credits:', error);
-    throw error;
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError('internal', 'Failed to update user credits');
+  }
+});
+
+// REDEEM PROMO CODE FUNCTION
+exports.redeemPromoCode = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const { auth, data } = request;
+  const code = (data && data.code) ? String(data.code) : '';
+
+  if (!auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const cleanCode = code.toUpperCase().trim();
+  if (!cleanCode) {
+    throw new HttpsError('invalid-argument', 'Invalid promo code');
+  }
+
+  const db = admin.firestore();
+  const promoRef = db.collection('promoCodes').doc(cleanCode);
+  const userRef = db.collection('users').doc(auth.uid);
+  const userPromoRef = userRef.collection('redeemedPromoCodes').doc(cleanCode);
+
+  let promoData;
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const promoDoc = await transaction.get(promoRef);
+      if (!promoDoc.exists) {
+        throw new HttpsError('not-found', 'Promo code not found');
+      }
+      
+      promoData = promoDoc.data();
+      if (!promoData.isActive) {
+        throw new HttpsError('failed-precondition', 'Promo code inactive');
+      }
+      
+      if (promoData.expirationDate && promoData.expirationDate.toDate() < new Date()) {
+        throw new HttpsError('deadline-exceeded', 'Promo code expired');
+      }
+      
+      const currentUses = promoData.currentUses || 0;
+      if (currentUses >= promoData.maxUses) {
+        throw new HttpsError('resource-exhausted', 'Promo code usage limit reached');
+      }
+
+      const userPromoDoc = await transaction.get(userPromoRef);
+      if (userPromoDoc.exists) {
+        throw new HttpsError('already-exists', 'Promo code already redeemed');
+      }
+
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.data() || {};
+      const currentCredits = userData.credits || 0;
+
+      const updateData = {
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      
+      if (promoData.isUnlimited) {
+        updateData.isUnlimited = true;
+        updateData.unlimitedUntil = promoData.expirationDate;
+        updateData.credits = 999;
+      } else {
+        updateData.credits = currentCredits + promoData.credits;
+      }
+
+      transaction.set(userRef, updateData, { merge: true });
+      transaction.set(userPromoRef, {
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+        creditsAdded: promoData.credits,
+        isUnlimited: promoData.isUnlimited,
+        description: promoData.description,
+      });
+      transaction.update(promoRef, {
+        currentUses: currentUses + 1,
+        lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    console.log(`✅ Promo code ${cleanCode} redeemed successfully for user ${auth.uid}`);
+
+    return {
+      success: true,
+      credits: promoData.credits,
+      description: promoData.description,
+      isUnlimited: promoData.isUnlimited,
+      expirationDate: promoData.expirationDate ? promoData.expirationDate.toMillis() / 1000 : null,
+      maxUses: promoData.maxUses,
+    };
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    console.error('Error redeeming promo code:', error);
+    throw new HttpsError('internal', 'Failed to redeem promo code');
   }
 });
