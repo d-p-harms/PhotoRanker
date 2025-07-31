@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var showingImagePicker = false
     @State private var showingPricingView = false
     @State private var showingPromoCodeView = false
+    @State private var showingPrivacyPolicy = false
     @State private var errorMessage: String? = nil
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -49,6 +50,9 @@ struct ContentView: View {
             .sheet(isPresented: $showingPromoCodeView) {
                 PromoCodeView()
             }
+            .sheet(isPresented: $showingPrivacyPolicy) {
+                PrivacyPolicyView()
+            }
             .alert("Error", isPresented: $showingAlert) {
                 Button("OK") {
                     errorMessage = nil
@@ -60,6 +64,9 @@ struct ContentView: View {
             .onAppear {
                 Task {
                     await pricingManager.loadUserCredits()
+                }
+                if PrivacyPolicyManager.shared.showPrivacyPolicy() {
+                    showingPrivacyPolicy = true
                 }
             }
         }
