@@ -18,6 +18,57 @@ class PricingManager: ObservableObject {
     
     static let shared = PricingManager()
     private var updateListenerTask: Task<Void, Error>?
+
+    // MARK: - Product Metadata
+
+    /// The available pricing tiers for in-app purchases
+    enum PricingTier {
+        case starter       // $0.99 for 20 photos
+        case value         // $4.99 for 120 photos
+
+        var credits: Int {
+            switch self {
+            case .starter: return 20
+            case .value: return 120
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .starter: return "Starter Pack"
+            case .value: return "Best Value"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .starter: return "Great for optimizing your profile"
+            case .value: return "Best deal - analyze your entire photo collection"
+            }
+        }
+
+        var savings: String? {
+            switch self {
+            case .value: return "Save 16%"
+            default: return nil
+            }
+        }
+
+        var isUnlimited: Bool { false }
+    }
+
+    /// StoreKit product identifiers
+    enum ProductID: String, CaseIterable {
+        case starter = "com.photorater.starter20"
+        case value = "com.photorater.value120"
+
+        var tier: PricingTier {
+            switch self {
+            case .starter: return .starter
+            case .value: return .value
+            }
+        }
+    }
     
     // Launch promotion check
     var isLaunchPeriod: Bool {
@@ -326,13 +377,6 @@ class PricingManager: ObservableObject {
     
     deinit {
         updateListenerTask?.cancel()
-    }
-}
-
-// MARK: - Product Tier Extensions
-extension ProductTier {
-    var isUnlimited: Bool {
-        return self == .unlimited
     }
 }
 
