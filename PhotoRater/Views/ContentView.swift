@@ -33,7 +33,6 @@ struct ContentView: View {
                 VStack(spacing: 20) {
                     titleAndCreditsSection
                     photoPickerButton
-                    selectedImagesPreview
                     criteriaSelectionSection
                     analysisButtonSection
                     errorMessageSection
@@ -201,18 +200,45 @@ struct ContentView: View {
     
     private var photoPickerButton: some View {
         Button(action: { showingImagePicker = true }) {
-            VStack {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.largeTitle)
-                    .padding()
+            VStack(spacing: 10) {
+                if selectedImages.isEmpty {
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.largeTitle)
+                        .padding()
+                } else {
+                    let columns = [GridItem(.adaptive(minimum: 80 * DeviceSizing.scale), spacing: 10)]
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, image in
+                            ZStack(alignment: .topTrailing) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 80 * DeviceSizing.scale, height: 80 * DeviceSizing.scale)
+                                    .clipped()
+                                    .cornerRadius(8)
+
+                                Button(action: { selectedImages.remove(at: index) }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .resizable()
+                                        .frame(width: 18 * DeviceSizing.scale, height: 18 * DeviceSizing.scale)
+                                        .foregroundColor(.red)
+                                        .background(Color.white)
+                                        .clipShape(Circle())
+                                }
+                                .padding(2)
+                            }
+                        }
+                    }
+                }
 
                 Text(photoPickerButtonText)
                     .font(.headline)
                     .fontWeight(.semibold)
+                    .foregroundColor(.blue)
             }
-            .foregroundColor(.blue)
             .frame(maxWidth: .infinity)
-            .frame(height: 120 * DeviceSizing.scale)
+            .padding()
+            .frame(minHeight: 120 * DeviceSizing.scale)
             .background(Color.blue.opacity(0.1))
             .cornerRadius(12)
             .overlay(
@@ -223,35 +249,6 @@ struct ContentView: View {
         .padding(.horizontal)
     }
 
-    @ViewBuilder
-    private var selectedImagesPreview: some View {
-        if !selectedImages.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, image in
-                        ZStack(alignment: .topTrailing) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(8)
-
-                            Button(action: {
-                                selectedImages.remove(at: index)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                                    .background(Color.white)
-                                    .clipShape(Circle())
-                            }
-                            .padding(2)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-    }
     
     @ViewBuilder
     private var criteriaSelectionSection: some View {
