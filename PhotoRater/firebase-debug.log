@@ -1,0 +1,167 @@
+[debug] [2025-07-30T23:23:03.399Z] ----------------------------------------------------------------------
+[debug] [2025-07-30T23:23:03.406Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy --only functions
+[debug] [2025-07-30T23:23:03.407Z] CLI Version:   14.2.0
+[debug] [2025-07-30T23:23:03.407Z] Platform:      darwin
+[debug] [2025-07-30T23:23:03.407Z] Node Version:  v22.14.0
+[debug] [2025-07-30T23:23:03.407Z] Time:          Wed Jul 30 2025 16:23:03 GMT-0700 (Pacific Daylight Time)
+[debug] [2025-07-30T23:23:03.407Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-07-30T23:23:03.545Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-30T23:23:03.545Z] > authorizing via signed-in user (davidpharms@gmail.com)
+[debug] [2025-07-30T23:23:03.546Z] [iam] checking project photo-rater-412b3 for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2025-07-30T23:23:03.546Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:03.546Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:03.547Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions [none]
+[debug] [2025-07-30T23:23:03.547Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:03.547Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-07-30T23:23:03.713Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions 200
+[debug] [2025-07-30T23:23:03.713Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2025-07-30T23:23:03.713Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:03.713Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:03.714Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/photo-rater-412b3/serviceAccounts/photo-rater-412b3@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-07-30T23:23:03.714Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/photo-rater-412b3/serviceAccounts/photo-rater-412b3@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-07-30T23:23:04.151Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/photo-rater-412b3/serviceAccounts/photo-rater-412b3@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-07-30T23:23:04.151Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/photo-rater-412b3/serviceAccounts/photo-rater-412b3@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'photo-rater-412b3'...
+[info] 
+[info] i  deploying functions 
+[debug] [2025-07-30T23:23:04.154Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.154Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.154Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3 [none]
+[debug] [2025-07-30T23:23:04.275Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3 200
+[debug] [2025-07-30T23:23:04.275Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3 {"projectNumber":"859734245046","projectId":"photo-rater-412b3","lifecycleState":"ACTIVE","name":"Photo Rater","labels":{"firebase":"enabled","firebase-core":"enabled"},"createTime":"2025-04-17T19:13:37.053125Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[debug] [2025-07-30T23:23:04.276Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:04.277Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-07-30T23:23:04.277Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:04.279Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/runtimeconfig.googleapis.com [none]
+[debug] [2025-07-30T23:23:04.279Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:04.281Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudbuild.googleapis.com [none]
+[debug] [2025-07-30T23:23:04.281Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudbuild.googleapis.com x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:04.282Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/artifactregistry.googleapis.com [none]
+[debug] [2025-07-30T23:23:04.282Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/artifactregistry.googleapis.com x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:05.077Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudbuild.googleapis.com 200
+[debug] [2025-07-30T23:23:05.077Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudbuild.googleapis.com [omitted]
+[info] ✔  functions: required API cloudbuild.googleapis.com is enabled 
+[debug] [2025-07-30T23:23:05.078Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/runtimeconfig.googleapis.com 200
+[debug] [2025-07-30T23:23:05.079Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2025-07-30T23:23:05.079Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/artifactregistry.googleapis.com 200
+[debug] [2025-07-30T23:23:05.079Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/artifactregistry.googleapis.com [omitted]
+[info] ✔  artifactregistry: required API artifactregistry.googleapis.com is enabled 
+[debug] [2025-07-30T23:23:05.080Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudfunctions.googleapis.com 200
+[debug] [2025-07-30T23:23:05.080Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/cloudfunctions.googleapis.com [omitted]
+[info] ✔  functions: required API cloudfunctions.googleapis.com is enabled 
+[debug] [2025-07-30T23:23:05.080Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.081Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.081Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/photo-rater-412b3/adminSdkConfig [none]
+[debug] [2025-07-30T23:23:05.453Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/photo-rater-412b3/adminSdkConfig 200
+[debug] [2025-07-30T23:23:05.454Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/photo-rater-412b3/adminSdkConfig {"projectId":"photo-rater-412b3","storageBucket":"photo-rater-412b3.firebasestorage.app"}
+[debug] [2025-07-30T23:23:05.455Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.455Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.455Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs [none]
+[debug] [2025-07-30T23:23:05.687Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs 200
+[debug] [2025-07-30T23:23:05.688Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs {"configs":[{"name":"projects/photo-rater-412b3/configs/gemini"}]}
+[debug] [2025-07-30T23:23:05.689Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.689Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.689Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables [none]
+[debug] [2025-07-30T23:23:05.858Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables 200
+[debug] [2025-07-30T23:23:05.858Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables {"variables":[{"name":"projects/photo-rater-412b3/configs/gemini/variables/api_key","updateTime":"2025-04-17T20:46:21.987774705Z"},{"name":"projects/photo-rater-412b3/configs/gemini/variables/key","updateTime":"2025-04-19T07:14:33.358668333Z"}]}
+[debug] [2025-07-30T23:23:05.859Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.859Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.859Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.859Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:05.859Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/api_key [none]
+[debug] [2025-07-30T23:23:05.860Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/key [none]
+[debug] [2025-07-30T23:23:06.005Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/api_key 200
+[debug] [2025-07-30T23:23:06.005Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/api_key {"name":"projects/photo-rater-412b3/configs/gemini/variables/api_key","updateTime":"2025-04-17T20:46:21.987774705Z","text":"AIzaSyDamp7t31W7fzXsE0CLPd4oOvFRv-pKI3Q"}
+[debug] [2025-07-30T23:23:06.016Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/key 200
+[debug] [2025-07-30T23:23:06.017Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/photo-rater-412b3/configs/gemini/variables/key {"name":"projects/photo-rater-412b3/configs/gemini/variables/key","updateTime":"2025-04-19T07:14:33.358668333Z","text":"AIzaSyDamp7t31W7fzXsE0CLPd4oOvFRv-pKI3Q"}
+[debug] [2025-07-30T23:23:06.020Z] Validating nodejs source
+[debug] [2025-07-30T23:23:06.570Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.0.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-07-30T23:23:06.570Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2025-07-30T23:23:06.571Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-07-30T23:23:06.577Z] Found firebase-functions binary at '/Users/davidharms/PhotoRanker/PhotoRater/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8436
+
+[debug] [2025-07-30T23:23:07.042Z] Got response from /__/functions.yaml {"endpoints":{},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled... 
+[debug] [2025-07-30T23:23:11.067Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.067Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.067Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/firebaseextensions.googleapis.com [none]
+[debug] [2025-07-30T23:23:11.068Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/firebaseextensions.googleapis.com x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:11.521Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/firebaseextensions.googleapis.com 200
+[debug] [2025-07-30T23:23:11.521Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/photo-rater-412b3/services/firebaseextensions.googleapis.com [omitted]
+[info] ✔  extensions: required API firebaseextensions.googleapis.com is enabled 
+[debug] [2025-07-30T23:23:11.522Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-07-30T23:23:11.522Z] > authorizing via signed-in user (davidpharms@gmail.com)
+[debug] [2025-07-30T23:23:11.522Z] [iam] checking project photo-rater-412b3 for permissions ["firebase.projects.get","firebaseextensions.instances.list"]
+[debug] [2025-07-30T23:23:11.522Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.522Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.523Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions [none]
+[debug] [2025-07-30T23:23:11.523Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions x-goog-quota-user=projects/photo-rater-412b3
+[debug] [2025-07-30T23:23:11.523Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2025-07-30T23:23:11.625Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions 200
+[debug] [2025-07-30T23:23:11.625Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/photo-rater-412b3:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2025-07-30T23:23:11.626Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.626Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:11.627Z] >>> [apiv2][query] GET https://firebaseextensions.googleapis.com/v1beta/projects/photo-rater-412b3/instances pageSize=100&pageToken=
+[debug] [2025-07-30T23:23:12.017Z] <<< [apiv2][status] GET https://firebaseextensions.googleapis.com/v1beta/projects/photo-rater-412b3/instances 200
+[debug] [2025-07-30T23:23:12.018Z] <<< [apiv2][body] GET https://firebaseextensions.googleapis.com/v1beta/projects/photo-rater-412b3/instances {}
+[debug] [2025-07-30T23:23:12.022Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:12.022Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:12.022Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/photo-rater-412b3/locations/-/functions [none]
+[debug] [2025-07-30T23:23:12.573Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/photo-rater-412b3/locations/-/functions 200
+[debug] [2025-07-30T23:23:12.573Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/photo-rater-412b3/locations/-/functions {}
+[debug] [2025-07-30T23:23:12.574Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:12.574Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:12.574Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/photo-rater-412b3/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2025-07-30T23:23:13.025Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/photo-rater-412b3/locations/-/functions 200
+[debug] [2025-07-30T23:23:13.025Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/photo-rater-412b3/locations/-/functions {"functions":[{"name":"projects/photo-rater-412b3/locations/us-central1/functions/updateUserCredits","buildConfig":{"build":"projects/859734245046/locations/us-central1/builds/0e7a4a2f-c812-4fbb-a451-a6ec0ba2c62b","runtime":"nodejs18","entryPoint":"updateUserCredits","source":{"storageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"updateUserCredits/function-source.zip","generation":"1753739209828072"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/photo-rater-412b3/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"updateUserCredits/function-source.zip","generation":"1753739209828072"}},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/photo-rater-412b3/serviceAccounts/859734245046-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{}},"serviceConfig":{"service":"projects/photo-rater-412b3/locations/us-central1/services/updateusercredits","timeoutSeconds":60,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"photo-rater-412b3\",\"storageBucket\":\"photo-rater-412b3.firebasestorage.app\"}","GCLOUD_PROJECT":"photo-rater-412b3","EVENTARC_CLOUD_EVENT_SOURCE":"projects/photo-rater-412b3/locations/us-central1/services/updateUserCredits","FUNCTION_TARGET":"updateUserCredits","LOG_EXECUTION_ID":"true","FUNCTION_SIGNATURE_TYPE":"http"},"maxInstanceCount":20,"ingressSettings":"ALLOW_ALL","uri":"https://updateusercredits-bdntyvqikq-uc.a.run.app","serviceAccountEmail":"859734245046-compute@developer.gserviceaccount.com","availableMemory":"256Mi","allTrafficOnLatestRevision":true,"revision":"updateusercredits-00015-moy","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2025-07-28T21:46:57.495263611Z","labels":{"deployment-callable":"true","firebase-functions-hash":"33eb27a80b156ee095253b68d5a52b1baec3ae03","deployment-tool":"cli-firebase"},"environment":"GEN_2","url":"https://us-central1-photo-rater-412b3.cloudfunctions.net/updateUserCredits","createTime":"2025-05-22T05:12:27.698912202Z","satisfiesPzi":true},{"name":"projects/photo-rater-412b3/locations/us-central1/functions/initializeUser","buildConfig":{"build":"projects/859734245046/locations/us-central1/builds/0e7a4a2f-c812-4fbb-a451-a6ec0ba2c62b","runtime":"nodejs18","entryPoint":"initializeUser","source":{"storageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"initializeUser/function-source.zip","generation":"1753739210023922"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/photo-rater-412b3/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"initializeUser/function-source.zip","generation":"1753739210023922"}},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/photo-rater-412b3/serviceAccounts/859734245046-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{}},"serviceConfig":{"service":"projects/photo-rater-412b3/locations/us-central1/services/initializeuser","timeoutSeconds":60,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"photo-rater-412b3\",\"storageBucket\":\"photo-rater-412b3.firebasestorage.app\"}","GCLOUD_PROJECT":"photo-rater-412b3","EVENTARC_CLOUD_EVENT_SOURCE":"projects/photo-rater-412b3/locations/us-central1/services/initializeUser","FUNCTION_TARGET":"initializeUser","LOG_EXECUTION_ID":"true","FUNCTION_SIGNATURE_TYPE":"http"},"maxInstanceCount":20,"ingressSettings":"ALLOW_ALL","uri":"https://initializeuser-bdntyvqikq-uc.a.run.app","serviceAccountEmail":"859734245046-compute@developer.gserviceaccount.com","availableMemory":"256Mi","allTrafficOnLatestRevision":true,"revision":"initializeuser-00015-mel","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2025-07-28T21:46:56.799290879Z","labels":{"deployment-callable":"true","firebase-functions-hash":"33eb27a80b156ee095253b68d5a52b1baec3ae03","deployment-tool":"cli-firebase"},"environment":"GEN_2","url":"https://us-central1-photo-rater-412b3.cloudfunctions.net/initializeUser","createTime":"2025-05-22T05:11:28.379687914Z","satisfiesPzi":true},{"name":"projects/photo-rater-412b3/locations/us-central1/functions/analyzePhotos","buildConfig":{"build":"projects/859734245046/locations/us-central1/builds/5d279434-353c-43df-94f2-de7c0ae421fc","runtime":"nodejs18","entryPoint":"analyzePhotos","source":{"storageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"analyzePhotos/function-source.zip","generation":"1753739150259188"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/photo-rater-412b3/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"analyzePhotos/function-source.zip","generation":"1753739150259188"}},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/photo-rater-412b3/serviceAccounts/859734245046-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{}},"serviceConfig":{"service":"projects/photo-rater-412b3/locations/us-central1/services/analyzephotos","timeoutSeconds":540,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"photo-rater-412b3\",\"storageBucket\":\"photo-rater-412b3.firebasestorage.app\"}","GCLOUD_PROJECT":"photo-rater-412b3","EVENTARC_CLOUD_EVENT_SOURCE":"projects/photo-rater-412b3/locations/us-central1/services/analyzePhotos","FUNCTION_TARGET":"analyzePhotos","LOG_EXECUTION_ID":"true"},"maxInstanceCount":20,"ingressSettings":"ALLOW_ALL","uri":"https://analyzephotos-bdntyvqikq-uc.a.run.app","serviceAccountEmail":"859734245046-compute@developer.gserviceaccount.com","availableMemory":"2Gi","allTrafficOnLatestRevision":true,"secretEnvironmentVariables":[{"key":"GEMINI_API_KEY","projectId":"photo-rater-412b3","secret":"GEMINI_API_KEY","version":"1"}],"revision":"analyzephotos-00023-nam","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2025-07-28T21:46:51.148659094Z","labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"6e74ff0d23ee6c7c2b9f9dcb9b12a6008c001242"},"environment":"GEN_2","url":"https://us-central1-photo-rater-412b3.cloudfunctions.net/analyzePhotos","createTime":"2025-04-19T08:14:48.301685293Z","satisfiesPzi":true},{"name":"projects/photo-rater-412b3/locations/us-central1/functions/getConfig","buildConfig":{"build":"projects/859734245046/locations/us-central1/builds/0e7a4a2f-c812-4fbb-a451-a6ec0ba2c62b","runtime":"nodejs18","entryPoint":"getConfig","source":{"storageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"getConfig/function-source.zip","generation":"1753739150258609"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/photo-rater-412b3/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-859734245046-us-central1","object":"getConfig/function-source.zip","generation":"1753739150258609"}},"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/photo-rater-412b3/serviceAccounts/859734245046-compute@developer.gserviceaccount.com","automaticUpdatePolicy":{}},"serviceConfig":{"service":"projects/photo-rater-412b3/locations/us-central1/services/getconfig","timeoutSeconds":60,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"photo-rater-412b3\",\"storageBucket\":\"photo-rater-412b3.firebasestorage.app\"}","GCLOUD_PROJECT":"photo-rater-412b3","EVENTARC_CLOUD_EVENT_SOURCE":"projects/photo-rater-412b3/locations/us-central1/services/getConfig","FUNCTION_TARGET":"getConfig","LOG_EXECUTION_ID":"true","FUNCTION_SIGNATURE_TYPE":"http"},"maxInstanceCount":20,"ingressSettings":"ALLOW_ALL","uri":"https://getconfig-bdntyvqikq-uc.a.run.app","serviceAccountEmail":"859734245046-compute@developer.gserviceaccount.com","availableMemory":"256Mi","allTrafficOnLatestRevision":true,"revision":"getconfig-00023-xik","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2025-07-28T21:46:50.305129181Z","labels":{"deployment-callable":"true","firebase-functions-hash":"33eb27a80b156ee095253b68d5a52b1baec3ae03","deployment-tool":"cli-firebase"},"environment":"GEN_2","url":"https://us-central1-photo-rater-412b3.cloudfunctions.net/getConfig","createTime":"2025-04-19T01:17:41.857176228Z","satisfiesPzi":true}]}
+[debug] [2025-07-30T23:23:13.035Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:13.035Z] Checked if tokens are valid: true, expires at: 1753921046978
+[debug] [2025-07-30T23:23:13.035Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/photo-rater-412b3/billingInfo [none]
+[debug] [2025-07-30T23:23:13.228Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/photo-rater-412b3/billingInfo 200
+[debug] [2025-07-30T23:23:13.229Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/photo-rater-412b3/billingInfo {"name":"projects/photo-rater-412b3/billingInfo","projectId":"photo-rater-412b3","billingAccountName":"billingAccounts/019D25-A120B3-3C3578","billingEnabled":true}
+[info] 
+The following functions are found in your project but do not exist in your local source code:
+	analyzePhotos(us-central1)
+	getConfig(us-central1)
+	initializeUser(us-central1)
+	updateUserCredits(us-central1)
+
+If you are renaming a function or changing its region, it is recommended that you create the new function first before deleting the old one to prevent event loss. For more info, visit https://firebase.google.com/docs/functions/manage-functions#modify
+
