@@ -28,15 +28,6 @@ class PricingManager: ObservableObject {
 
     /// Shared singleton instance
     static let shared = PricingManager()
-
-#if targetEnvironment(simulator)
-    /// Disable automatic purchase restoration on the simulator to avoid the
-    /// Apple ID prompt. Toggle back for App Store builds.
-    static let shouldAutoRestorePurchases = false
-#else
-    /// Enable automatic purchase restoration on physical devices.
-    static let shouldAutoRestorePurchases = true
-#endif
     private var updateListenerTask: Task<Void, Error>?
 
     // MARK: - Product Metadata
