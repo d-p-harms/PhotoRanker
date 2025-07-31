@@ -28,7 +28,20 @@ class PhotoProcessor: ObservableObject {
     private init() {}
     
     func rankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
-        
+        // Ensure the user is authenticated before proceeding. This prevents
+        // mismatches between the anonymous client user ID and the server side
+        // authentication context.
+        AuthenticationService.shared.ensureAuthenticated { result in
+            switch result {
+            case .success:
+                self.performRanking(images: images, criteria: criteria, completion: completion)
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    private func performRanking(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         // ESSENTIAL SECURITY: Rate limiting check
         guard checkRateLimit() else {
             let error = NSError(domain: "PhotoProcessor", code: 429,
