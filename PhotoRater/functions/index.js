@@ -3,6 +3,7 @@ const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const vision = require('@google-cloud/vision');
 const sharp = require('sharp');
 
 // Initialize Firebase Admin SDK
@@ -13,6 +14,7 @@ setGlobalOptions({ region: 'us-central1' });
 
 // Define the secret for GEMINI_API_KEY
 const geminiKey = defineSecret('GEMINI_API_KEY');
+const visionClient = new vision.ImageAnnotatorClient();
 
 // ANALYZE PHOTOS FUNCTION
 exports.analyzePhotos = onCall({
@@ -127,12 +129,20 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
     const [buffer] = await file.download();
     
     const resizedBuffer = await sharp(buffer)
-      .resize(1024, 1024, { 
+      .resize(1024, 1024, {
         fit: 'inside',
-        withoutEnlargement: true 
+        withoutEnlargement: true
       })
       .jpeg({ quality: 85 })
       .toBuffer();
+
+    const [safeResult] = await visionClient.safeSearchDetection(resizedBuffer);
+    const safe = safeResult.safeSearchAnnotation || {};
+    const flaggedLevels = ['LIKELY', 'VERY_LIKELY'];
+    if (flaggedLevels.includes(safe.adult) || flaggedLevels.includes(safe.violence) || flaggedLevels.includes(safe.racy)) {
+      console.warn(`SafeSearch blocked ${fileName}:`, safe);
+      return createRejectedResponse(fileName, photoUrl, 'Image violates content policy');
+    }
 
     const base64Image = resizedBuffer.toString('base64');
 
@@ -281,6 +291,30 @@ function createFallbackResponse(fileName, photoUrl, criteria, responseText = '')
     strengths: [bestQuality],
     improvements: suggestions,
     nextPhotoSuggestions: ["Add more photos to complement this one"],
+    technicalFeedback: {},
+    datingInsights: {
+      personalityProjected: [],
+      demographicAppeal: null,
+      profileRole: null
+    }
+  };
+}
+
+function createRejectedResponse(fileName, photoUrl, reason) {
+  return {
+    fileName: fileName,
+    storageURL: photoUrl,
+    score: 0,
+    visualQuality: 0,
+    attractivenessScore: 0,
+    datingAppealScore: 0,
+    swipeWorthiness: 0,
+    tags: [],
+    bestQuality: '',
+    suggestions: [reason],
+    strengths: [],
+    improvements: [reason],
+    nextPhotoSuggestions: [],
     technicalFeedback: {},
     datingInsights: {
       personalityProjected: [],
