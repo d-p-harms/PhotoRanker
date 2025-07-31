@@ -2,6 +2,8 @@ import UIKit
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseFunctions
+import FirebaseStorage
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     private var authStateListener: AuthStateDidChangeListenerHandle?
@@ -12,6 +14,18 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         print("🔥 Firebase configured successfully")
         
+        // Connect to Firebase emulators when enabled
+#if DEBUG
+        if ProcessInfo.processInfo.environment["FIREBASE_EMULATORS"] == "1" {
+            let host = "localhost"
+            Auth.auth().useEmulator(withHost: host, port: 9099)
+            Firestore.firestore().useEmulator(withHost: host, port: 8080)
+            Functions.functions().useEmulator(withHost: host, port: 5001)
+            Storage.storage().useEmulator(withHost: host, port: 9199)
+            print("🔄 Using Firebase emulators")
+        }
+#endif
+
         // Configure Firestore settings for better performance
         configureFirestoreSettings()
         
