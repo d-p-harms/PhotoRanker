@@ -5,6 +5,7 @@ struct AccountView: View {
     @StateObject private var pricingManager = PricingManager.shared
     @State private var showingPricingView = false
     @State private var showingPromoCodeView = false
+    @State private var showingPrivacyPolicy = false
 
     var body: some View {
         NavigationView {
@@ -41,6 +42,11 @@ struct AccountView: View {
                         try? Auth.auth().signOut()
                     }
                 }
+                Section {
+                    Button("Privacy Policy") {
+                        showingPrivacyPolicy = true
+                    }
+                }
             }
             .navigationTitle("Account")
         }
@@ -50,6 +56,9 @@ struct AccountView: View {
         }
         .sheet(isPresented: $showingPromoCodeView) {
             PromoCodeView()
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            PrivacyPolicyView()
         }
     }
 }
