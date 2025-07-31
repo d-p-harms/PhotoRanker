@@ -10,6 +10,7 @@ struct PricingView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var selectedProductID: PricingManager.ProductID = .starter
     @State private var showingPromoCodeView = false
+    @State private var showingPrivacyPolicy = false
     
     var body: some View {
         NavigationView {
@@ -153,7 +154,13 @@ struct PricingView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                        
+
+                        Button("Privacy Policy") {
+                            showingPrivacyPolicy = true
+                        }
+                        .font(.caption)
+                        .foregroundColor(.blue)
+
                         if isLaunchPeriod {
                             Text("Launch promotion valid through August 24, 2025")
                                 .font(.caption)
@@ -175,6 +182,9 @@ struct PricingView: View {
         .navigationViewStyle(.stack)
         .sheet(isPresented: $showingPromoCodeView) {
             PromoCodeView()
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            PrivacyPolicyView()
         }
         .onAppear {
             // Products are automatically loaded in PricingManager.init()
