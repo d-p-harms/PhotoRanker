@@ -1,9 +1,9 @@
 // PromoCodeManager.swift
-// Final production version with server-side validation
+// Updated to work with new credit system
 
 import Foundation
+import FirebaseFirestore
 import FirebaseAuth
-import FirebaseFunctions
 
 @MainActor
 class PromoCodeManager: ObservableObject {
@@ -13,7 +13,18 @@ class PromoCodeManager: ObservableObject {
     @Published var redemptionMessage: String?
     @Published var isSuccess = false
     
-    private let functions = Functions.functions()
+    private let db = Firestore.firestore()
+    
+    // Single secure promo code
+    private let promoCodes: [String: PromoCodeDetails] = [
+        "K9X7M3P8Q2W5": PromoCodeDetails(
+            credits: 999,
+            description: "Unlimited Access",
+            isUnlimited: true,
+            expirationDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
+            maxUses: 10
+        )
+    ]
     
     private init() {}
     
@@ -36,35 +47,29 @@ class PromoCodeManager: ObservableObject {
             return .failure("Invalid format")
         }
         
+        // Check if code exists
+        guard let promoDetails = promoCodes[cleanCode] else {
+            await updateUI(isValidating: false, message: "Invalid promo code", success: false)
+            return .failure("Invalid promo code")
+        }
+        
+        // Check expiration
+        if Date() > promoDetails.expirationDate {
+            await updateUI(isValidating: false, message: "This promo code has expired", success: false)
+            return .failure("Promo code expired")
+        }
+        
         // Ensure user is authenticated
-        guard await ensureAuthenticated() != nil else {
+        guard let userId = await ensureAuthenticated() else {
             await updateUI(isValidating: false, message: "Authentication failed. Please try again.", success: false)
             return .failure("Authentication failed")
         }
-
-        // Redeem promo code via Cloud Function
+        
+        // Perform redemption
         do {
-            let result = try await functions.httpsCallable("redeemPromoCode").call(["code": cleanCode])
-
-            guard let data = result.data as? [String: Any],
-                  let credits = data["credits"] as? Int,
-                  let description = data["description"] as? String,
-                  let isUnlimited = data["isUnlimited"] as? Bool,
-                  let expirationSeconds = data["expirationDate"] as? TimeInterval,
-                  let maxUses = data["maxUses"] as? Int else {
-                throw PromoCodeError.networkError
-            }
-
-            let expirationDate = Date(timeIntervalSince1970: expirationSeconds)
-
-            let promoDetails = PromoCodeDetails(
-                credits: credits,
-                description: description,
-                isUnlimited: isUnlimited,
-                expirationDate: expirationDate,
-                maxUses: maxUses
-            )
-
+            try await performRedemption(userId: userId, code: cleanCode, promoDetails: promoDetails)
+            
+            // Success - UPDATE: Use new credit system
             if promoDetails.isUnlimited {
                 PricingManager.shared.setUnlimitedAccess(until: promoDetails.expirationDate)
                 await updateUI(
@@ -73,6 +78,8 @@ class PromoCodeManager: ObservableObject {
                     success: true
                 )
             } else {
+                // CRITICAL UPDATE: Use addFreeCredits instead of addCredits
+                PricingManager.shared.addFreeCredits(count: promoDetails.credits)
                 await updateUI(
                     isValidating: false,
                     message: "🎉 Success! You've received \(promoDetails.credits) credits.",
@@ -93,12 +100,14 @@ class PromoCodeManager: ObservableObject {
     
     private func ensureAuthenticated() async -> String? {
         if let currentUser = Auth.auth().currentUser {
+            print("✅ User already authenticated: \(currentUser.uid)")
             return currentUser.uid
         }
         
-        // Attempt anonymous sign-in
+        // Try to sign in anonymously
         do {
             let result = try await Auth.auth().signInAnonymously()
+            print("✅ Successfully authenticated user: \(result.user.uid)")
             return result.user.uid
         } catch {
             print("❌ Authentication failed: \(error.localizedDescription)")
@@ -106,6 +115,53 @@ class PromoCodeManager: ObservableObject {
         }
     }
     
+    private func performRedemption(userId: String, code: String, promoDetails: PromoCodeDetails) async throws {
+        // Check if user has already used this code
+        let userPromoRef = db.collection("users").document(userId)
+            .collection("redeemedPromoCodes").document(code)
+        
+        let userPromoDoc = try await userPromoRef.getDocument()
+        
+        if userPromoDoc.exists {
+            throw PromoCodeError.alreadyRedeemed
+        }
+        
+        // Check global usage limit
+        let globalPromoRef = db.collection("promoCodes").document(code)
+        let globalPromoDoc = try await globalPromoRef.getDocument()
+        
+        let currentUses = globalPromoDoc.data()?["uses"] as? Int ?? 0
+        if currentUses >= promoDetails.maxUses {
+            throw PromoCodeError.usageLimitReached
+        }
+        
+        // Perform transaction
+        _ = try await db.runTransaction { (transaction, errorPointer) in
+            do {
+                let userRef = self.db.collection("users").document(userId)
+                let userDoc = try transaction.getDocument(userRef)
+                
+                // Mark promo code as redeemed
+                transaction.setData([
+                    "redeemedAt": FieldValue.serverTimestamp(),
+                    "creditsAdded": promoDetails.credits,
+                    "isUnlimited": promoDetails.isUnlimited,
+                    "description": promoDetails.description,
+                ], forDocument: userPromoRef)
+                
+                // Update global usage count
+                transaction.updateData([
+                    "uses": currentUses + 1,
+                    "lastUsed": FieldValue.serverTimestamp()
+                ], forDocument: globalPromoRef)
+                
+                return nil
+            } catch {
+                print("❌ Transaction error: \(error)")
+                return error
+            }
+        }
+    }
     
     private func updateUI(isValidating: Bool, message: String?, success: Bool) async {
         self.isValidating = isValidating
@@ -127,44 +183,35 @@ class PromoCodeManager: ObservableObject {
             }
         }
         
-        // Handle Firebase Functions errors
+        // Handle Firestore errors
         let nsError = error as NSError
-
-        if nsError.domain == FunctionsErrorDomain, let code = FunctionsErrorCode(rawValue: nsError.code) {
-            switch code {
-            case .alreadyExists:
-                return "You've already used this promo code"
-            case .notFound, .invalidArgument:
-                return "Invalid promo code"
-            case .failedPrecondition:
-                return "This promo code is no longer active"
-            case .resourceExhausted:
-                return "This promo code has reached its usage limit"
-            case .permissionDenied:
-                return "Permission denied. Please restart the app."
-            case .unauthenticated:
-                return "Authentication error. Please restart the app."
-            case .deadlineExceeded:
-                return "Request timed out. Please try again."
-            case .unavailable:
-                return "Service temporarily unavailable. Please try again."
-            default:
-                break
-            }
-        }
-
-        let description = error.localizedDescription.lowercased()
-        if description.contains("network") || description.contains("internet") {
-            return "Network error. Please check your connection."
-        } else if description.contains("timeout") {
+        
+        switch nsError.code {
+        case FirestoreErrorCode.unavailable.rawValue:
+            return "Service temporarily unavailable. Please try again."
+        case FirestoreErrorCode.deadlineExceeded.rawValue:
             return "Request timed out. Please try again."
-        } else {
-            return "Something went wrong. Please try again."
+        case FirestoreErrorCode.permissionDenied.rawValue:
+            return "Permission denied. Please restart the app."
+        case FirestoreErrorCode.notFound.rawValue:
+            return "Account not found. Please restart the app."
+        case FirestoreErrorCode.unauthenticated.rawValue:
+            return "Authentication error. Please restart the app."
+        default:
+            let description = error.localizedDescription.lowercased()
+            if description.contains("network") || description.contains("internet") {
+                return "Network error. Please check your connection."
+            } else if description.contains("timeout") {
+                return "Request timed out. Please try again."
+            } else {
+                print("❌ Unhandled error: \(error.localizedDescription)")
+                return "Something went wrong. Please try again."
+            }
         }
     }
 }
 
-// MARK: - Supporting Types
+// MARK: - Supporting Types (keep existing)
 
 struct PromoCodeDetails {
     let credits: Int
