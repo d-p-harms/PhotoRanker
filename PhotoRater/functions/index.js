@@ -53,6 +53,7 @@ exports.analyzePhotos = onCall({
     }
 
     let allResults = [];
+    let filesToCleanup = [];
 
     for (const [batchIndex, batch] of batches.entries()) {
       console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} photos)`);
@@ -60,7 +61,7 @@ exports.analyzePhotos = onCall({
       const batchPromises = batch.map(async (photoUrl, index) => {
         try {
           await new Promise(resolve => setTimeout(resolve, index * 200));
-          return await analyzeImageWithGemini(photoUrl, criteria, model);
+          return await analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup);
         } catch (error) {
           console.error(`Error in batch ${batchIndex + 1}, photo ${index + 1}:`, error);
           return {
@@ -86,7 +87,9 @@ exports.analyzePhotos = onCall({
         
     const sortedResults = allResults.sort((a, b) => b.score - a.score);
     const topResults = sortedResults.slice(0, Math.min(12, sortedResults.length));
-        
+
+    await cleanupFiles(filesToCleanup);
+
     console.log(`Returning top ${topResults.length} results`);
 
     return {
@@ -101,6 +104,7 @@ exports.analyzePhotos = onCall({
            
   } catch (error) {
     console.error('Error analyzing photos:', error);
+    await cleanupFiles(filesToCleanup);
     throw new HttpsError(
       'internal',
       error.message || 'Failed to analyze photos'
@@ -108,7 +112,7 @@ exports.analyzePhotos = onCall({
   }
 });
 
-async function analyzeImageWithGemini(photoUrl, criteria, model) {
+async function analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup) {
   let file;
   try {
     console.log(`Processing photo: ${photoUrl} with criteria: ${criteria}`);
@@ -125,6 +129,9 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
 
     const bucket = admin.storage().bucket();
     file = bucket.file(filePath);
+    if (filesToCleanup) {
+      filesToCleanup.push(file);
+    }
     
     const [buffer] = await file.download();
     
@@ -167,18 +174,9 @@ async function analyzeImageWithGemini(photoUrl, criteria, model) {
     
   } catch (error) {
     console.error('Error in analyzeImageWithGemini:', error);
-    
+
     const fileName = photoUrl.split('/').pop() || 'photo';
     return createFallbackResponse(fileName, photoUrl, criteria);
-  } finally {
-    if (file) {
-      try {
-        await file.delete({ ignoreNotFound: true });
-        console.log(`Deleted photo ${photoUrl} from storage`);
-      } catch (deleteErr) {
-        console.error('Error deleting file from storage:', deleteErr);
-      }
-    }
   }
 }
 
@@ -489,4 +487,14 @@ exports.updateUserCredits = onCall({
 
   return { success: true };
 });
+
+async function cleanupFiles(files) {
+  for (const file of files) {
+    try {
+      await file.delete({ ignoreNotFound: true });
+    } catch (error) {
+      console.error('Cleanup error:', error);
+    }
+  }
+}
 
