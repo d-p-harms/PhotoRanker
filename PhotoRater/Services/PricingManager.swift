@@ -16,16 +16,6 @@ class PricingManager: ObservableObject {
     private var purchasedCredits: Int = 0
     private var freeCredits: Int = 0
     
-    // Toggle automatic purchase restoration based on the build environment
-#if targetEnvironment(simulator)
-    /// Disable automatic restoration in the simulator to avoid the Apple ID
-    /// prompt. Switch this back for App Store builds.
-    static let shouldAutoRestorePurchases = false
-#else
-    /// Enable automatic restoration on physical devices.
-    static let shouldAutoRestorePurchases = true
-#endif
-
     /// Shared singleton instance
     static let shared = PricingManager()
     private var updateListenerTask: Task<Void, Error>?
@@ -94,9 +84,7 @@ class PricingManager: ObservableObject {
         
         Task {
             await loadProducts()
-            if PricingManager.shouldAutoRestorePurchases {
-                await restoreAllPurchasesFromApple() // Check Apple first
-            }
+            await restoreAllPurchasesFromApple() // Check Apple first
             await loadFreeCreditsFromFirebase()   // Then load any saved free credits
             await MainActor.run {
                 self.isInitialized = true
