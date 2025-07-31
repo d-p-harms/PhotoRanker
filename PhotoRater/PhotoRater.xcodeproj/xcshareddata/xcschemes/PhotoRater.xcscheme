@@ -70,11 +70,6 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
-         <EnvironmentVariable
-            key="FIREBASE_EMULATORS"
-            value="1"
-            isEnabled="YES">
-         </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions/>
    </LaunchAction>

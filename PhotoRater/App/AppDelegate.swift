@@ -14,17 +14,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         FirebaseApp.configure()
         print("🔥 Firebase configured successfully")
         
-        // Connect to Firebase emulators when enabled
-#if DEBUG
-        if ProcessInfo.processInfo.environment["FIREBASE_EMULATORS"] == "1" {
-            let host = "localhost"
-            Auth.auth().useEmulator(withHost: host, port: 9099)
-            Firestore.firestore().useEmulator(withHost: host, port: 8080)
-            Functions.functions().useEmulator(withHost: host, port: 5001)
-            Storage.storage().useEmulator(withHost: host, port: 9199)
-            print("🔄 Using Firebase emulators")
-        }
-#endif
+        // Firebase is configured above.  No local emulator overrides
 
         // Configure Firestore settings for better performance
         configureFirestoreSettings()
@@ -67,22 +57,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let db = Firestore.firestore()
         let settings = FirestoreSettings()
 
-        #if DEBUG && targetEnvironment(simulator)
-        // Use Firebase emulators in debug simulator mode
-        print("🧪 Using Firebase emulators for development")
-
-        // Configure Firestore emulator
-        settings.host = "127.0.0.1:8080"
-        settings.isPersistenceEnabled = false  // Disable for emulator
-        settings.isSSLEnabled = false
-
-        // Configure Auth emulator
-        Auth.auth().useEmulator(withHost: "127.0.0.1", port: 9099)
-        #else
-        // Production settings
+        // Firestore production settings
         settings.isPersistenceEnabled = true
         settings.cacheSizeBytes = 100 * 1024 * 1024 // 100MB cache
-        #endif
 
         db.settings = settings
         print("📊 Firestore configured")
