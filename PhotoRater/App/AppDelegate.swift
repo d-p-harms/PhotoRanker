@@ -36,7 +36,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 // Initialize user credits after authentication
                 Task {
                     await PricingManager.shared.loadUserCredits()
-                    await PricingManager.shared.restorePurchases()
+                    if PricingManager.shouldAutoRestorePurchases {
+                        await PricingManager.shared.restorePurchases()
+                    }
                 }
             } else {
                 print("🔑 No user authenticated, signing in anonymously...")
@@ -49,7 +51,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                         // Initialize user credits after authentication
                         Task {
                             await PricingManager.shared.loadUserCredits()
-                            await PricingManager.shared.restorePurchases()
+                            if PricingManager.shouldAutoRestorePurchases {
+                                await PricingManager.shared.restorePurchases()
+                            }
                         }
                     }
                 }
