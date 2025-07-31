@@ -60,16 +60,28 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
     
     private func configureFirestoreSettings() {
-        // Configure Firestore for optimal performance
         let db = Firestore.firestore()
         let settings = FirestoreSettings()
-        
-        // Enable offline persistence for better user experience
+
+        #if DEBUG && targetEnvironment(simulator)
+        // Use Firebase emulators in debug simulator mode
+        print("🧪 Using Firebase emulators for development")
+
+        // Configure Firestore emulator
+        settings.host = "127.0.0.1:8080"
+        settings.isPersistenceEnabled = false  // Disable for emulator
+        settings.isSSLEnabled = false
+
+        // Configure Auth emulator
+        Auth.auth().useEmulator(withHost: "127.0.0.1", port: 9099)
+        #else
+        // Production settings
         settings.isPersistenceEnabled = true
         settings.cacheSizeBytes = 100 * 1024 * 1024 // 100MB cache
-        
+        #endif
+
         db.settings = settings
-        print("📊 Firestore configured with offline persistence")
+        print("📊 Firestore configured")
     }
     
     deinit {
