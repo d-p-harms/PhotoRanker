@@ -10,6 +10,7 @@ struct PricingView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var selectedProductID: PricingManager.ProductID = .starter
     @State private var showingPromoCodeView = false
+    @State private var showingTerms = false
     
     var body: some View {
         NavigationView {
@@ -149,10 +150,16 @@ struct PricingView: View {
                     
                     // Terms and disclaimer
                     VStack(spacing: 8) {
-                        Text("By purchasing, you agree to our Terms of Service")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        HStack(spacing: 4) {
+                            Text("By purchasing, you agree to our")
+                            Button("Terms of Service") {
+                                showingTerms = true
+                            }
+                            .underline()
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                         
                         if isLaunchPeriod {
                             Text("Launch promotion valid through August 24, 2025")
@@ -175,6 +182,9 @@ struct PricingView: View {
         .navigationViewStyle(.stack)
         .sheet(isPresented: $showingPromoCodeView) {
             PromoCodeView()
+        }
+        .sheet(isPresented: $showingTerms) {
+            TermsOfServiceView()
         }
         .onAppear {
             // Products are automatically loaded in PricingManager.init()

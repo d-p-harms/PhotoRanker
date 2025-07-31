@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var showingImagePicker = false
     @State private var showingPricingView = false
     @State private var showingPromoCodeView = false
+    @State private var showingTermsOfService = false
     @State private var errorMessage: String? = nil
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -48,6 +49,13 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingPromoCodeView) {
                 PromoCodeView()
+            }
+            .sheet(isPresented: $showingTermsOfService) {
+                TermsOfServiceView {
+                    TermsOfServiceManager.shared.acceptTerms()
+                    showingTermsOfService = false
+                    analyzePhotos()
+                }
             }
             .alert("Error", isPresented: $showingAlert) {
                 Button("OK") {
@@ -472,6 +480,11 @@ struct ContentView: View {
     }
     
     private func analyzePhotos() {
+        guard TermsOfServiceManager.shared.hasAcceptedTerms() else {
+            showingTermsOfService = true
+            return
+        }
+
         guard !selectedImages.isEmpty,
               pricingManager.canAnalyzePhotos(count: selectedImages.count) else {
             alertMessage = "You need more credits to analyze these photos."
