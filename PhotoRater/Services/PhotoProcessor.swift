@@ -5,6 +5,7 @@ import FirebaseStorage
 import FirebaseFunctions
 import FirebaseAuth
 import ImageIO
+import ContentModerationService
 
 class PhotoProcessor: ObservableObject {
     static let shared = PhotoProcessor()
@@ -52,7 +53,18 @@ class PhotoProcessor: ObservableObject {
             completion(.failure(error))
             return
         }
-        
+
+        for (index, image) in images.enumerated() {
+            let result = ContentModerationService.shared.detectInappropriateContent(image: image)
+            if !result.isAllowed {
+                let message = result.errorMessage ?? "Image \(index + 1) failed content moderation"
+                let error = NSError(domain: "PhotoProcessor", code: 3,
+                                   userInfo: [NSLocalizedDescriptionKey: message])
+                completion(.failure(error))
+                return
+            }
+        }
+
         // Upload photos with MINIMAL processing
         uploadOptimizedPhotos(images) { uploadResult in
             switch uploadResult {
