@@ -224,15 +224,13 @@ struct ContentView: View {
     
     @ViewBuilder
     private var criteriaSelectionSection: some View {
-        if !selectedImages.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Analysis Type")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal)
-                
-                criteriaGrid
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Analysis Type")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .padding(.horizontal)
+
+            criteriaGrid
         }
     }
     
@@ -255,33 +253,31 @@ struct ContentView: View {
     
     @ViewBuilder
     private var analysisButtonSection: some View {
-        if !selectedImages.isEmpty {
-            Button(action: analyzePhotos) {
-                HStack {
-                    if isProcessing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
-                    }
-                    
-                    Text(getButtonText())
-                        .fontWeight(.semibold)
+        Button(action: analyzePhotos) {
+            HStack {
+                if isProcessing {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.8)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: getButtonColors()),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(12)
+
+                Text(getButtonText())
+                    .fontWeight(.semibold)
             }
-            .disabled(isAnalysisDisabled)
-            .padding(.horizontal)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: getButtonColors()),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(12)
         }
+        .disabled(isAnalysisDisabled)
+        .padding(.horizontal)
     }
     
     @ViewBuilder
