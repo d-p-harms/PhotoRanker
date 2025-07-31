@@ -33,6 +33,7 @@ struct ContentView: View {
                 VStack(spacing: 20) {
                     titleAndCreditsSection
                     photoPickerButton
+                    selectedImagesPreview
                     criteriaSelectionSection
                     analysisButtonSection
                     errorMessageSection
@@ -204,7 +205,7 @@ struct ContentView: View {
                 Image(systemName: "photo.on.rectangle")
                     .font(.largeTitle)
                     .padding()
-                
+
                 Text(photoPickerButtonText)
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -220,6 +221,36 @@ struct ContentView: View {
             )
         }
         .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private var selectedImagesPreview: some View {
+        if !selectedImages.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, image in
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .cornerRadius(8)
+
+                            Button(action: {
+                                selectedImages.remove(at: index)
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                                    .background(Color.white)
+                                    .clipShape(Circle())
+                            }
+                            .padding(2)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
     }
     
     @ViewBuilder
