@@ -12,7 +12,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 #if targetEnvironment(simulator)
         // Use a debug provider when running in the simulator to avoid
         // DeviceCheck errors during development.
-        AppCheck.setAppCheckProviderFactory(DebugAppCheckProviderFactory())
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
 #endif
         
         // Set up authentication state listener
