@@ -498,7 +498,7 @@ class PhotoProcessor: ObservableObject {
                     let balancedPhoto = photo.withUpdatedReason(updatedReason)
                     selected.append(balancedPhoto)
                     
-                    print("Added \(category == "general" ? "general") category (score: \(photo.score))")
+                    print("Added \(category == \"general\" ? \"general\" : category) category (score: \(photo.score))")
                 }
             }
         }
