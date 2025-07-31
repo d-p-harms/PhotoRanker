@@ -324,3 +324,4 @@ exports.getConfig = onCall({
     }
   };
 });
+
