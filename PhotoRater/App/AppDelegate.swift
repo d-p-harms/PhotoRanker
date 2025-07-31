@@ -1,35 +1,36 @@
 import UIKit
 import FirebaseCore
 import FirebaseAuth
-import FirebaseAppCheck
+import FirebaseFirestore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     private var authStateListener: AuthStateDidChangeListenerHandle?
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Configure Firebase
+        
+        // Configure Firebase - minimal setup
         FirebaseApp.configure()
-#if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
-        // Use a debug provider when running in the simulator or Mac Catalyst to
-        // avoid DeviceCheck errors during development.
-        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
-#endif
+        print("🔥 Firebase configured successfully")
+        
+        // Configure Firestore settings for better performance
+        configureFirestoreSettings()
         
         // Set up authentication state listener
         authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
             if let user = user {
-                print("User authenticated: \(user.uid)")
+                print("✅ User authenticated: \(user.uid)")
                 // Initialize user credits after authentication
                 Task {
                     await PricingManager.shared.loadUserCredits()
                 }
             } else {
+                print("🔑 No user authenticated, signing in anonymously...")
                 // Sign in anonymously to satisfy authentication requirements
                 Auth.auth().signInAnonymously { authResult, error in
                     if let error = error {
-                        print("Error signing in anonymously: \(error.localizedDescription)")
+                        print("❌ Error signing in anonymously: \(error.localizedDescription)")
                     } else if let user = authResult?.user {
-                        print("Successfully signed in anonymously: \(user.uid)")
+                        print("✅ Successfully signed in anonymously: \(user.uid)")
                         // Initialize user credits after authentication
                         Task {
                             await PricingManager.shared.loadUserCredits()
@@ -40,6 +41,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
         
         return true
+    }
+    
+    private func configureFirestoreSettings() {
+        // Configure Firestore for optimal performance
+        let db = Firestore.firestore()
+        let settings = FirestoreSettings()
+        
+        // Enable offline persistence for better user experience
+        settings.isPersistenceEnabled = true
+        settings.cacheSizeBytes = 100 * 1024 * 1024 // 100MB cache
+        
+        db.settings = settings
+        print("📊 Firestore configured with offline persistence")
     }
     
     deinit {
