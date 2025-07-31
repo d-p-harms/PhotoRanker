@@ -27,6 +27,7 @@ AB7F6193A7616D0322508231 /* AccountView.swift in Sources */ = {isa = PBXBuildFil
 AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
 D7BC7F095AB9D622B88A28E6 /* ContentModerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA74F3D145B079D3AB19DB67 /* ContentModerationService.swift */; };
 A6FB73F0DF3551F802406D09 /* PrivacyPolicyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445813E6401A80FDD8F95ABC /* PrivacyPolicyManager.swift */; };
+ABCD12342F4A4F5B00A1B2C4 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCD12342F4A4F5B00A1B2C3 /* PrivacyPolicyView.swift */; };
 AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A62DB191900005A7DC /* AppDelegate.swift */; };
 		AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */; };
 		AB8032AD2DB3346F0005A7DC /* RankedPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8032AB2DB334660005A7DC /* RankedPhoto.swift */; };
@@ -143,10 +144,11 @@ AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFil
                 445813E6401A80FDD8F95ABC /* PrivacyPolicyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyManager.swift; sourceTree = "<group>"; };
                 AB8032CA2DB33DDD0005A7DC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = text; path = Assets.xcassets; sourceTree = "<group>"; };
 		AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
-		AB9BF5C86947447786F514F7 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
-		AB9F0A802F1111110005A7DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		ABDEAD002F00000000000000 /* DeviceSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSizing.swift; sourceTree = "<group>"; };
-		ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankerApp.swift; sourceTree = "<group>"; };
+                AB9BF5C86947447786F514F7 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+                AB9F0A802F1111110005A7DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+                ABCD12342F4A4F5B00A1B2C3 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
+                ABDEAD002F00000000000000 /* DeviceSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSizing.swift; sourceTree = "<group>"; };
+                ABFDC0CE2E3306FD0074935A /* PhotoRankerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRankerApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -307,8 +309,9 @@ AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFil
 				AB82C4ABEEBD84CBF0AA1EB6 /* GalleryView.swift */,
 				AB9BF5C86947447786F514F7 /* AccountView.swift */,
 				AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
-				AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
-				AB9F0A802F1111110005A7DC /* MainTabView.swift */,
+                               AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
+                               ABCD12342F4A4F5B00A1B2C3 /* PrivacyPolicyView.swift */,
+                               AB9F0A802F1111110005A7DC /* MainTabView.swift */,
 				AB8032BE2DB33CE70005A7DC /* Components */,
 			);
 			path = Views;
@@ -625,10 +628,11 @@ AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFil
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
 				AB52EB7D2E3ACC6D002EDA9D /* GalleryManager.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
-				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
-				AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */,
-				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
-				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
+                                AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
+                                AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */,
+                                ABCD12342F4A4F5B00A1B2C4 /* PrivacyPolicyView.swift in Sources */,
+                                AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
+                                ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
 				AB9F0A812F1111110005A7DC /* MainTabView.swift in Sources */,
 				AB16CEDDB6587523FCF1016B /* GalleryView.swift in Sources */,
