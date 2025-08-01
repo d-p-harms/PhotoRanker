@@ -497,4 +497,3 @@ async function cleanupFiles(files) {
     }
   }
 }
-

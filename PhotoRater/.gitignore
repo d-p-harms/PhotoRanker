@@ -1,24 +1,15 @@
 # Xcode
 DerivedData/
 build/
+*.xcworkspace
+*.xcuserdata
 *.xcuserstate
-xcuserdata/
 
-# SwiftPM - Keep Package.resolved for Firebase!
-.swiftpm/config/
+# SwiftPM
+.swiftpm
 .build/
 
-# iOS/macOS
-.DS_Store
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-# Firebase (if using local config)
-firebase-debug.log*
-.firebase/
-
 # Other
-*.swp
-*.swo
-*~
+.DS_Store
+.DS_Store
+.DS_Store

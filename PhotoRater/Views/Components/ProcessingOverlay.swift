@@ -21,7 +21,7 @@ struct ProcessingOverlay: View {
             if let progress = progress {
                 ProgressView(value: progress)
                     .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                    .frame(width: 200 * DeviceSizing.scale)
+                    .frame(width: 200)
             }
         }
         .padding(30)

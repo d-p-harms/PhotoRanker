@@ -83,13 +83,13 @@ struct PhotoDetailView: View {
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
-                    .frame(height: 250 * DeviceSizing.scale)
+                    .frame(height: 250)
                     .overlay(
                         ProgressView()
                     )
             }
         }
-        .frame(maxHeight: 300 * DeviceSizing.scale)
+        .frame(maxHeight: 300)
         .cornerRadius(12)
     }
     
@@ -365,12 +365,12 @@ struct QualityIndicator: View {
         ZStack {
             Circle()
                 .stroke(Color.gray.opacity(0.3), lineWidth: 8)
-                .frame(width: 60 * DeviceSizing.scale, height: 60 * DeviceSizing.scale)
+                .frame(width: 60, height: 60)
             
             Circle()
                 .trim(from: 0, to: score / 100)
                 .stroke(getQualityColor(score), style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                .frame(width: 60 * DeviceSizing.scale, height: 60 * DeviceSizing.scale)
+                .frame(width: 60, height: 60)
                 .rotationEffect(.degrees(-90))
             
             Image(systemName: getQualityIcon(score))

@@ -1,5 +1,5 @@
 // PromoCodeManager.swift
-// Updated to work with new credit system
+// Updated with single secure promo code
 
 import Foundation
 import FirebaseFirestore
@@ -69,7 +69,7 @@ class PromoCodeManager: ObservableObject {
         do {
             try await performRedemption(userId: userId, code: cleanCode, promoDetails: promoDetails)
             
-            // Success - UPDATE: Use new credit system
+            // Success
             if promoDetails.isUnlimited {
                 PricingManager.shared.setUnlimitedAccess(until: promoDetails.expirationDate)
                 await updateUI(
@@ -78,22 +78,35 @@ class PromoCodeManager: ObservableObject {
                     success: true
                 )
             } else {
-                // CRITICAL UPDATE: Use addFreeCredits instead of addCredits
-                PricingManager.shared.addFreeCredits(count: promoDetails.credits)
+                PricingManager.shared.addCredits(count: promoDetails.credits)
                 await updateUI(
                     isValidating: false,
-                    message: "🎉 Success! You've received \(promoDetails.credits) credits.",
+                    message: "🎉 Success! Added \(promoDetails.credits) credits to your account.",
                     success: true
                 )
             }
-
+            
+            // Refresh user credits
+            await PricingManager.shared.loadUserCredits()
+            
             return .success(promoDetails)
-
+            
         } catch {
             let errorMessage = getReadableError(error)
             await updateUI(isValidating: false, message: errorMessage, success: false)
             return .failure(errorMessage)
         }
+    }
+    
+    // Helper method to check if a code exists (for testing)
+    func isValidCode(_ code: String) -> Bool {
+        let upperCode = code.uppercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        return promoCodes[upperCode] != nil
+    }
+    
+    // Get all available promo codes (for testing/admin purposes)
+    func getAllPromoCodes() -> [String: PromoCodeDetails] {
+        return promoCodes
     }
     
     // MARK: - Private Methods
@@ -141,26 +154,52 @@ class PromoCodeManager: ObservableObject {
                 let userRef = self.db.collection("users").document(userId)
                 let userDoc = try transaction.getDocument(userRef)
                 
-                // Mark promo code as redeemed
-                transaction.setData([
+                let currentCredits = userDoc.data()?["credits"] as? Int ?? 0
+                
+                // Update user credits
+                var userData: [String: Any] = [
+                    "lastUpdated": FieldValue.serverTimestamp()
+                ]
+                
+                if promoDetails.isUnlimited {
+                    userData["isUnlimited"] = true
+                    userData["unlimitedUntil"] = Timestamp(date: promoDetails.expirationDate)
+                    userData["credits"] = 999
+                } else {
+                    userData["credits"] = currentCredits + promoDetails.credits
+                }
+                
+                transaction.setData(userData, forDocument: userRef, merge: true)
+                
+                // Record user's redemption
+                let redemptionData: [String: Any] = [
                     "redeemedAt": FieldValue.serverTimestamp(),
                     "creditsAdded": promoDetails.credits,
                     "isUnlimited": promoDetails.isUnlimited,
-                    "description": promoDetails.description,
-                ], forDocument: userPromoRef)
+                    "description": promoDetails.description
+                ]
+                
+                transaction.setData(redemptionData, forDocument: userPromoRef)
                 
                 // Update global usage count
-                transaction.updateData([
+                let globalData: [String: Any] = [
                     "uses": currentUses + 1,
-                    "lastUsed": FieldValue.serverTimestamp()
-                ], forDocument: globalPromoRef)
+                    "lastUsed": FieldValue.serverTimestamp(),
+                    "description": promoDetails.description,
+                    "maxUses": promoDetails.maxUses
+                ]
+                
+                transaction.setData(globalData, forDocument: globalPromoRef, merge: true)
                 
                 return nil
+                
             } catch {
-                print("❌ Transaction error: \(error)")
-                return error
+                errorPointer?.pointee = error as NSError
+                return nil
             }
         }
+        
+        print("✅ Promo code \(code) redeemed successfully for user \(userId)")
     }
     
     private func updateUI(isValidating: Bool, message: String?, success: Bool) async {
@@ -211,7 +250,7 @@ class PromoCodeManager: ObservableObject {
     }
 }
 
-// MARK: - Supporting Types (keep existing)
+// MARK: - Supporting Types
 
 struct PromoCodeDetails {
     let credits: Int
