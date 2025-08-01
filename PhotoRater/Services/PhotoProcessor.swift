@@ -2,7 +2,6 @@
 import UIKit
 import Foundation
 import Firebase
-import FirebaseStorage
 import FirebaseFunctions
 import FirebaseAuth
 import ImageIO
@@ -10,7 +9,6 @@ import ImageIO
 class PhotoProcessor: ObservableObject {
     static let shared = PhotoProcessor()
     private let functions = Functions.functions()
-    private let storage = Storage.storage()
     
     // BALANCED: Keep quality settings, add security limits
     private let optimalAISize: CGFloat = 1536
@@ -67,14 +65,12 @@ class PhotoProcessor: ObservableObject {
             return
         }
 
-        // Upload photos with MINIMAL processing
-        uploadOptimizedPhotos(images) { uploadResult in
-            switch uploadResult {
-            case .success(let photoUrls):
-                self.processInBatches(photoUrls: photoUrls, criteria: criteria, originalImages: images, completion: completion)
-            case .failure(let error):
-                completion(.failure(error))
-            }
+        // Prepare base64 encoded images
+        switch prepareImageData(images) {
+        case .success(let photoData):
+            self.processInBatches(photoData: photoData, criteria: criteria, originalImages: images, completion: completion)
+        case .failure(let error):
+            completion(.failure(error))
         }
     }
     
@@ -123,14 +119,14 @@ class PhotoProcessor: ObservableObject {
         return true
     }
     
-    private func processInBatches(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func processInBatches(photoData: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
         // Split into batches if needed
-        let batches = photoUrls.chunked(into: maxBatchSize)
+        let batches = photoData.chunked(into: maxBatchSize)
         
         if batches.count == 1 {
             // Single batch - process normally
-            analyzeWithGemini(photoUrls: photoUrls, criteria: criteria, originalImages: originalImages, completion: completion)
+            analyzeWithGemini(photoData: photoData, criteria: criteria, originalImages: originalImages, completion: completion)
         } else {
             // Multiple batches - process sequentially
             processBatchesSequentially(batches: batches, criteria: criteria, originalImages: originalImages, completion: completion)
@@ -153,7 +149,7 @@ class PhotoProcessor: ObservableObject {
             let batch = batches[currentBatch]
             print("Processing batch \(currentBatch + 1) of \(batches.count) (\(batch.count) photos)")
             
-            analyzeWithGemini(photoUrls: batch, criteria: criteria, originalImages: originalImages) { result in
+            analyzeWithGemini(photoData: batch, criteria: criteria, originalImages: originalImages) { result in
                 switch result {
                 case .success(let batchResults):
                     allResults.append(contentsOf: batchResults)
@@ -261,72 +257,30 @@ class PhotoProcessor: ObservableObject {
         return jpegData
     }
     
-    // SECURE UPLOAD: User-specific paths but preserve quality
-    private func uploadOptimizedPhotos(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
-        guard let userId = Auth.auth().currentUser?.uid else {
-            let error = NSError(domain: "PhotoProcessor", code: 401,
-                               userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
-            completion(.failure(error))
-            return
-        }
-        
-        let dispatchGroup = DispatchGroup()
-        var uploadedUrls: [String] = []
-        var uploadError: Error?
-        
+    // Convert optimized images to base64 strings
+    private func prepareImageData(_ images: [UIImage]) -> Result<[String], Error> {
+        var encoded: [String] = []
+
         for (index, image) in images.enumerated() {
-            dispatchGroup.enter()
-            
             guard let optimizedData = optimizeImageForAI(image) else {
-                uploadError = NSError(domain: "PhotoProcessor", code: 1,
-                                    userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"])
-                dispatchGroup.leave()
-                continue
+                return .failure(NSError(domain: "PhotoProcessor", code: 1,
+                                        userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"]))
             }
-            
-            // SECURITY: User-specific secure file path
-            let timestamp = Int(Date().timeIntervalSince1970)
-            let randomId = UUID().uuidString.prefix(8)
-            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
-            let ref = storage.reference().child(fileName)
-            
-            // Upload optimized image
-            ref.putData(optimizedData, metadata: nil) { _, error in
-                if let error = error {
-                    uploadError = error
-                    dispatchGroup.leave()
-                    return
-                }
-                
-                ref.downloadURL { url, error in
-                    if let error = error {
-                        uploadError = error
-                    } else if let url = url {
-                        uploadedUrls.append(url.absoluteString)
-                    }
-                    dispatchGroup.leave()
-                }
-            }
+
+            encoded.append(optimizedData.base64EncodedString())
         }
-        
-        dispatchGroup.notify(queue: DispatchQueue.main) {
-            if let error = uploadError {
-                completion(.failure(error))
-            } else {
-                print("Successfully uploaded \(uploadedUrls.count) optimized images")
-                completion(.success(uploadedUrls))
-            }
-        }
+
+        return .success(encoded)
     }
     
     // ESSENTIAL SECURITY: Basic validation with quality preservation
-    private func analyzeWithGemini(photoUrls: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func analyzeWithGemini(photoData: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         let data: [String: Any] = [
-            "photoUrls": photoUrls,
+            "photos": photoData,
             "criteria": criteria.rawValue
         ]
-        
-        print("Calling Firebase function with \(photoUrls.count) photos")
+
+        print("Calling Firebase function with \(photoData.count) photos")
         
         functions.httpsCallable("analyzePhotos").call(data) { result, error in
             if let error = error {
