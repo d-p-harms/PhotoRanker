@@ -29,7 +29,20 @@ class PhotoProcessor: ObservableObject {
     private init() {}
     
     func rankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
-        
+        AuthenticationService.shared.ensureAuthenticated { [weak self] authResult in
+            guard let self = self else { return }
+
+            switch authResult {
+            case .success:
+                self.performRankPhotos(images: images, criteria: criteria, completion: completion)
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    private func performRankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+
         // ESSENTIAL SECURITY: Rate limiting check
         guard checkRateLimit() else {
             let error = NSError(domain: "PhotoProcessor", code: 429,
@@ -37,7 +50,7 @@ class PhotoProcessor: ObservableObject {
             completion(.failure(error))
             return
         }
-        
+
         // ESSENTIAL SECURITY: Photo count validation
         guard images.count <= maxPhotosPerSession else {
             let error = NSError(domain: "PhotoProcessor", code: 1,
@@ -45,7 +58,7 @@ class PhotoProcessor: ObservableObject {
             completion(.failure(error))
             return
         }
-        
+
         // MINIMAL VALIDATION: Only check for obvious issues
         guard validateImagesBasic(images) else {
             let error = NSError(domain: "PhotoProcessor", code: 2,
@@ -53,7 +66,7 @@ class PhotoProcessor: ObservableObject {
             completion(.failure(error))
             return
         }
-        
+
         // Upload photos with MINIMAL processing
         uploadOptimizedPhotos(images) { uploadResult in
             switch uploadResult {
