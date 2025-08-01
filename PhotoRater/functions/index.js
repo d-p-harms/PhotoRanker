@@ -16,6 +16,38 @@ setGlobalOptions({ region: 'us-central1' });
 const geminiKey = defineSecret('GEMINI_API_KEY');
 const visionClient = new vision.ImageAnnotatorClient();
 
+// ENHANCED IMAGE PROCESSING FUNCTIONS
+async function validateAndPrepareImage(buffer) {
+  const metadata = await sharp(buffer).metadata();
+  console.log(`Received image: ${metadata.width}x${metadata.height}, ${Math.round(buffer.length/1024)}KB`);
+  
+  // Validate image meets our AI analysis standards
+  const maxDimension = Math.max(metadata.width, metadata.height);
+  
+  if (maxDimension < 500) {
+    throw new Error('Image too small for quality analysis (minimum 500px)');
+  }
+  
+  if (buffer.length > 10 * 1024 * 1024) { // 10MB limit
+    throw new Error('Image too large (maximum 10MB)');
+  }
+  
+  // Only process if image needs correction - preserve client optimization when possible
+  if (maxDimension > 2048) {
+    console.log('Resizing oversized image to optimal size');
+    return await sharp(buffer)
+      .resize(1536, 1536, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 92 })
+      .toBuffer();
+  }
+  
+  // Image is already optimized, return as-is
+  return buffer;
+}
+
 // ANALYZE PHOTOS FUNCTION
 exports.analyzePhotos = onCall({
   secrets: [geminiKey],
@@ -113,15 +145,12 @@ async function analyzeImageWithGemini(photoData, criteria, model) {
 
     const buffer = Buffer.from(photoData, 'base64');
     
-    const resizedBuffer = await sharp(buffer)
-      .resize(1024, 1024, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    // Use enhanced image processing with validation
+    const processedBuffer = await validateAndPrepareImage(buffer);
+    console.log(`Enhanced image processing complete, new size: ${processedBuffer.length} bytes`);
 
-    const [safeResult] = await visionClient.safeSearchDetection(resizedBuffer);
+    // SafeSearch detection for content filtering
+    const [safeResult] = await visionClient.safeSearchDetection(processedBuffer);
     const safe = safeResult.safeSearchAnnotation || {};
     const flaggedLevels = ['LIKELY', 'VERY_LIKELY'];
     if (flaggedLevels.includes(safe.adult) || flaggedLevels.includes(safe.violence) || flaggedLevels.includes(safe.racy)) {
@@ -129,7 +158,7 @@ async function analyzeImageWithGemini(photoData, criteria, model) {
       return createRejectedResponse('photo', '', 'Image violates content policy');
     }
 
-    const base64Image = resizedBuffer.toString('base64');
+    const base64Image = processedBuffer.toString('base64');
 
     const prompt = generatePrompt(criteria);
     
@@ -152,6 +181,12 @@ async function analyzeImageWithGemini(photoData, criteria, model) {
     
   } catch (error) {
     console.error('Error in analyzeImageWithGemini:', error);
+    
+    // Enhanced error handling for image processing errors
+    if (error.message.includes('too small') || error.message.includes('too large')) {
+      return createRejectedResponse('photo', '', error.message);
+    }
+    
     return createFallbackResponse('photo', '', criteria);
   }
 }
@@ -228,27 +263,60 @@ function parseGeminiResponse(responseText, fileName, photoUrl, criteria) {
       };
     }
   } catch (parseError) {
-    console.warn('JSON parsing failed, using fallback parsing:', parseError);
+    console.warn('JSON parsing failed, using enhanced fallback parsing:', parseError);
   }
   
-  return createFallbackResponse(fileName, photoUrl, criteria, responseText);
+  return createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText);
 }
 
-function createFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
+function createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
   let score = 75;
   
+  // Enhanced score detection
   const scoreMatch = responseText.match(/(?:score|rating):?\s*(\d+)/i);
   if (scoreMatch) {
     score = Math.min(Math.max(parseInt(scoreMatch[1], 10), 0), 100);
   }
   
+  // Enhanced quality detection from File 2's logic
   let bestQuality = getCriteriaSpecificFallback(criteria, responseText);
-  let suggestions = ["Consider the analysis feedback provided"];
+  if (responseText.toLowerCase().includes('great lighting')) {
+    bestQuality = "Excellent lighting creates an appealing look";
+  } else if (responseText.toLowerCase().includes('good composition')) {
+    bestQuality = "Well-composed shot with strong visual appeal";
+  } else if (responseText.toLowerCase().includes('natural') || responseText.toLowerCase().includes('authentic')) {
+    bestQuality = "Natural and authentic appearance is very attractive";
+  } else if (responseText.toLowerCase().includes('confident')) {
+    bestQuality = "Projects confidence which is highly appealing";
+  } else if (responseText.toLowerCase().includes('smile') || responseText.toLowerCase().includes('expression')) {
+    bestQuality = "Facial expression is warm and inviting";
+  }
   
-  if (responseText.toLowerCase().includes('lighting')) {
-    suggestions = ["Focus on improving lighting conditions"];
-  } else if (responseText.toLowerCase().includes('background')) {
-    suggestions = ["Consider a cleaner background"];
+  // Enhanced suggestions based on content analysis
+  let suggestions = ["Consider better lighting for enhanced appeal"];
+  if (responseText.toLowerCase().includes('background')) {
+    suggestions = ["Try a less distracting background to focus attention on you"];
+  } else if (responseText.toLowerCase().includes('angle')) {
+    suggestions = ["Experiment with different camera angles for more flattering shots"];
+  } else if (responseText.toLowerCase().includes('outfit') || responseText.toLowerCase().includes('clothing')) {
+    suggestions = ["Consider outfit choices that better complement your features"];
+  } else if (responseText.toLowerCase().includes('pose') || responseText.toLowerCase().includes('posture')) {
+    suggestions = ["Try more confident poses to enhance your appeal"];
+  }
+  
+  // Enhanced tag detection
+  const tags = [];
+  if (responseText.toLowerCase().includes('group') || responseText.toLowerCase().includes('friends')) {
+    tags.push('social');
+  }
+  if (responseText.toLowerCase().includes('activity') || responseText.toLowerCase().includes('sport') || responseText.toLowerCase().includes('hobby')) {
+    tags.push('activity');
+  }
+  if (responseText.toLowerCase().includes('personality') || responseText.toLowerCase().includes('character')) {
+    tags.push('personality');
+  }
+  if (responseText.toLowerCase().includes('outdoor') || responseText.toLowerCase().includes('nature')) {
+    tags.push('outdoor');
   }
   
   return {
@@ -259,12 +327,12 @@ function createFallbackResponse(fileName, photoUrl, criteria, responseText = '')
     attractivenessScore: score,
     datingAppealScore: Math.max(score - 3, 0),
     swipeWorthiness: Math.max(score - 2, 0),
-    tags: [],
+    tags: tags,
     bestQuality: bestQuality,
     suggestions: suggestions,
     strengths: [bestQuality],
     improvements: suggestions,
-    nextPhotoSuggestions: ["Add more photos to complement this one"],
+    nextPhotoSuggestions: ["Add a photo showing a different side of your personality"],
     technicalFeedback: {},
     datingInsights: {
       personalityProjected: [],
@@ -272,6 +340,10 @@ function createFallbackResponse(fileName, photoUrl, criteria, responseText = '')
       profileRole: null
     }
   };
+}
+
+function createFallbackResponse(fileName, photoUrl, criteria) {
+  return createEnhancedFallbackResponse(fileName, photoUrl, criteria, '');
 }
 
 function createRejectedResponse(fileName, photoUrl, reason) {
@@ -342,7 +414,8 @@ exports.getConfig = onCall({
       profilePositioning: true,
       conversationOptimization: true,
       appealAnalysis: true,
-      authenticityCheck: true
+      authenticityCheck: true,
+      enhancedImageProcessing: true
     }
   };
 });
@@ -463,4 +536,3 @@ exports.updateUserCredits = onCall({
 
   return { success: true };
 });
-
