@@ -24,15 +24,15 @@ exports.analyzePhotos = onCall({
   region: 'us-central1',
 }, async (request) => {
   try {
-    const { photoUrls, criteria } = request.data;
+    const { photos, criteria } = request.data;
     const maxBatchSize = 12;
 
-    if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
+    if (!photos || !Array.isArray(photos) || photos.length === 0) {
       throw new HttpsError('invalid-argument', 'No photos provided');
     }
 
-    if (photoUrls.length > maxBatchSize) {
-      throw new HttpsError('invalid-argument', 
+    if (photos.length > maxBatchSize) {
+      throw new HttpsError('invalid-argument',
         `Maximum ${maxBatchSize} photos per batch. Please process in smaller groups.`);
     }
 
@@ -43,30 +43,28 @@ exports.analyzePhotos = onCall({
     const genAI = new GoogleGenerativeAI(geminiKey.value());
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    console.log(`Starting photo analysis with criteria: ${criteria} for ${photoUrls.length} photos`);
+    console.log(`Starting photo analysis with criteria: ${criteria} for ${photos.length} photos`);
 
     const concurrencyLimit = 6;
     const batches = [];
     
-    for (let i = 0; i < photoUrls.length; i += concurrencyLimit) {
-      batches.push(photoUrls.slice(i, i + concurrencyLimit));
+    for (let i = 0; i < photos.length; i += concurrencyLimit) {
+      batches.push(photos.slice(i, i + concurrencyLimit));
     }
 
     let allResults = [];
-    let filesToCleanup = [];
-
     for (const [batchIndex, batch] of batches.entries()) {
       console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} photos)`);
-      
-      const batchPromises = batch.map(async (photoUrl, index) => {
+
+      const batchPromises = batch.map(async (data, index) => {
         try {
           await new Promise(resolve => setTimeout(resolve, index * 200));
-          return await analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup);
+          return await analyzeImageWithGemini(data, criteria, model);
         } catch (error) {
           console.error(`Error in batch ${batchIndex + 1}, photo ${index + 1}:`, error);
           return {
             fileName: `photo_${index}`,
-            storageURL: photoUrl,
+            storageURL: '',
             score: 70,
             tags: [],
             bestQuality: "Photo uploaded successfully",
@@ -88,15 +86,13 @@ exports.analyzePhotos = onCall({
     const sortedResults = allResults.sort((a, b) => b.score - a.score);
     const topResults = sortedResults.slice(0, Math.min(12, sortedResults.length));
 
-    await cleanupFiles(filesToCleanup);
-
     console.log(`Returning top ${topResults.length} results`);
 
     return {
       success: true,
       results: topResults,
       metadata: {
-        totalPhotos: photoUrls.length,
+        totalPhotos: photos.length,
         batchesProcessed: batches.length,
         averageScore: Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length)
       }
@@ -104,7 +100,6 @@ exports.analyzePhotos = onCall({
            
   } catch (error) {
     console.error('Error analyzing photos:', error);
-    await cleanupFiles(filesToCleanup);
     throw new HttpsError(
       'internal',
       error.message || 'Failed to analyze photos'
@@ -112,33 +107,11 @@ exports.analyzePhotos = onCall({
   }
 });
 
-async function analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup) {
-  let file;
+async function analyzeImageWithGemini(photoData, criteria, model) {
   try {
-    console.log(`Processing photo: ${photoUrl} with criteria: ${criteria}`);
+    console.log(`Processing photo with criteria: ${criteria}`);
 
-    let filePath;
-    let bucket = admin.storage().bucket();
-    if (photoUrl.includes('firebasestorage.googleapis.com')) {
-      const pathMatch = photoUrl.match(/o\/(.+?)\?/);
-      if (pathMatch && pathMatch[1]) {
-        filePath = decodeURIComponent(pathMatch[1]);
-      }
-      const bucketMatch = photoUrl.match(/v0\/b\/([^/]+)/);
-      if (bucketMatch && bucketMatch[1] && bucketMatch[1] !== bucket.name) {
-        console.log(`Using bucket from URL: ${bucketMatch[1]}`);
-        bucket = admin.storage().bucket(bucketMatch[1]);
-      }
-    }
-
-    const fileName = filePath ? filePath.split('/').pop() : 'uploaded_photo';
-
-    file = bucket.file(filePath);
-    if (filesToCleanup) {
-      filesToCleanup.push(file);
-    }
-    
-    const [buffer] = await file.download();
+    const buffer = Buffer.from(photoData, 'base64');
     
     const resizedBuffer = await sharp(buffer)
       .resize(1024, 1024, {
@@ -152,8 +125,8 @@ async function analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup)
     const safe = safeResult.safeSearchAnnotation || {};
     const flaggedLevels = ['LIKELY', 'VERY_LIKELY'];
     if (flaggedLevels.includes(safe.adult) || flaggedLevels.includes(safe.violence) || flaggedLevels.includes(safe.racy)) {
-      console.warn(`SafeSearch blocked ${fileName}:`, safe);
-      return createRejectedResponse(fileName, photoUrl, 'Image violates content policy');
+      console.warn('SafeSearch blocked image:', safe);
+      return createRejectedResponse('photo', '', 'Image violates content policy');
     }
 
     const base64Image = resizedBuffer.toString('base64');
@@ -173,15 +146,13 @@ async function analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup)
     const response = await result.response;
     const text = response.text();
     
-    console.log(`Analysis complete for ${fileName}`);
-    
-    return parseGeminiResponse(text, fileName, photoUrl, criteria);
+    console.log('Analysis complete');
+
+    return parseGeminiResponse(text, 'photo', '', criteria);
     
   } catch (error) {
     console.error('Error in analyzeImageWithGemini:', error);
-
-    const fileName = photoUrl.split('/').pop() || 'photo';
-    return createFallbackResponse(fileName, photoUrl, criteria);
+    return createFallbackResponse('photo', '', criteria);
   }
 }
 
@@ -493,12 +464,3 @@ exports.updateUserCredits = onCall({
   return { success: true };
 });
 
-async function cleanupFiles(files) {
-  for (const file of files) {
-    try {
-      await file.delete({ ignoreNotFound: true });
-    } catch (error) {
-      console.error('Cleanup error:', error);
-    }
-  }
-}
