@@ -4,6 +4,7 @@
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseFunctions
 
 @MainActor
 class PromoCodeManager: ObservableObject {
@@ -12,8 +13,9 @@ class PromoCodeManager: ObservableObject {
     @Published var isValidating = false
     @Published var redemptionMessage: String?
     @Published var isSuccess = false
-    
+
     private let db = Firestore.firestore()
+    private let functions = Functions.functions()
     
     // Single secure promo code
     private let promoCodes: [String: PromoCodeDetails] = [
@@ -129,77 +131,10 @@ class PromoCodeManager: ObservableObject {
     }
     
     private func performRedemption(userId: String, code: String, promoDetails: PromoCodeDetails) async throws {
-        // Check if user has already used this code
-        let userPromoRef = db.collection("users").document(userId)
-            .collection("redeemedPromoCodes").document(code)
-        
-        let userPromoDoc = try await userPromoRef.getDocument()
-        
-        if userPromoDoc.exists {
-            throw PromoCodeError.alreadyRedeemed
-        }
-        
-        // Check global usage limit
-        let globalPromoRef = db.collection("promoCodes").document(code)
-        let globalPromoDoc = try await globalPromoRef.getDocument()
-        
-        let currentUses = globalPromoDoc.data()?["uses"] as? Int ?? 0
-        if currentUses >= promoDetails.maxUses {
-            throw PromoCodeError.usageLimitReached
-        }
-        
-        // Perform transaction
-        _ = try await db.runTransaction { (transaction, errorPointer) in
-            do {
-                let userRef = self.db.collection("users").document(userId)
-                let userDoc = try transaction.getDocument(userRef)
-                
-                let currentCredits = userDoc.data()?["credits"] as? Int ?? 0
-                
-                // Update user credits
-                var userData: [String: Any] = [
-                    "lastUpdated": FieldValue.serverTimestamp()
-                ]
-                
-                if promoDetails.isUnlimited {
-                    userData["isUnlimited"] = true
-                    userData["unlimitedUntil"] = Timestamp(date: promoDetails.expirationDate)
-                    userData["credits"] = 999
-                } else {
-                    userData["credits"] = currentCredits + promoDetails.credits
-                }
-                
-                transaction.setData(userData, forDocument: userRef, merge: true)
-                
-                // Record user's redemption
-                let redemptionData: [String: Any] = [
-                    "redeemedAt": FieldValue.serverTimestamp(),
-                    "creditsAdded": promoDetails.credits,
-                    "isUnlimited": promoDetails.isUnlimited,
-                    "description": promoDetails.description
-                ]
-                
-                transaction.setData(redemptionData, forDocument: userPromoRef)
-                
-                // Update global usage count
-                let globalData: [String: Any] = [
-                    "uses": currentUses + 1,
-                    "lastUsed": FieldValue.serverTimestamp(),
-                    "description": promoDetails.description,
-                    "maxUses": promoDetails.maxUses
-                ]
-                
-                transaction.setData(globalData, forDocument: globalPromoRef, merge: true)
-                
-                return nil
-                
-            } catch {
-                errorPointer?.pointee = error as NSError
-                return nil
-            }
-        }
-        
-        print("✅ Promo code \(code) redeemed successfully for user \(userId)")
+        // Use Cloud Function to redeem promo code with elevated privileges
+        let callable = functions.httpsCallable("redeemPromoCode")
+        _ = try await callable.call(["code": code])
+        print("✅ Promo code \(code) redeemed successfully via Cloud Function")
     }
     
     private func updateUI(isValidating: Bool, message: String?, success: Bool) async {
@@ -222,9 +157,34 @@ class PromoCodeManager: ObservableObject {
             }
         }
         
-        // Handle Firestore errors
+        // Handle Firestore and Cloud Functions errors
         let nsError = error as NSError
-        
+
+        // Cloud Functions errors
+        if nsError.domain == FunctionsErrorDomain,
+           let code = FunctionsErrorCode(rawValue: nsError.code) {
+            switch code {
+            case .permissionDenied:
+                return "Permission denied. Please restart the app."
+            case .unauthenticated:
+                return "Authentication error. Please restart the app."
+            case .alreadyExists:
+                return "You've already used this promo code"
+            case .notFound:
+                return "Invalid promo code"
+            case .failedPrecondition:
+                return "This promo code has reached its usage limit"
+            case .invalidArgument:
+                return "Invalid promo code format"
+            case .deadlineExceeded:
+                return "Request timed out. Please try again."
+            case .unavailable:
+                return "Service temporarily unavailable. Please try again."
+            default:
+                break
+            }
+        }
+
         switch nsError.code {
         case FirestoreErrorCode.unavailable.rawValue:
             return "Service temporarily unavailable. Please try again."
