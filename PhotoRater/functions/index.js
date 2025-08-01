@@ -20,32 +20,40 @@ const visionClient = new vision.ImageAnnotatorClient();
 async function validateAndPrepareImage(buffer) {
   const metadata = await sharp(buffer).metadata();
   console.log(`Received image: ${metadata.width}x${metadata.height}, ${Math.round(buffer.length/1024)}KB`);
-  
+
   // Validate image meets our AI analysis standards
   const maxDimension = Math.max(metadata.width, metadata.height);
-  
+
   if (maxDimension < 500) {
     throw new Error('Image too small for quality analysis (minimum 500px)');
   }
-  
-  if (buffer.length > 10 * 1024 * 1024) { // 10MB limit
-    throw new Error('Image too large (maximum 10MB)');
-  }
-  
-  // Only process if image needs correction - preserve client optimization when possible
+
+  let sharpInstance = sharp(buffer);
+
+  // Resize very large images first
   if (maxDimension > 2048) {
     console.log('Resizing oversized image to optimal size');
-    return await sharp(buffer)
-      .resize(1536, 1536, {
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ quality: 92 })
-      .toBuffer();
+    sharpInstance = sharpInstance.resize(1536, 1536, {
+      fit: 'inside',
+      withoutEnlargement: true
+    });
   }
-  
-  // Image is already optimized, return as-is
-  return buffer;
+
+  // Convert to JPEG and iteratively reduce quality if needed
+  let quality = 92;
+  let processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
+
+  while (processedBuffer.length > 10 * 1024 * 1024 && quality > 60) {
+    quality -= 5;
+    console.log(`Compressing image to quality ${quality}`);
+    processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
+  }
+
+  if (processedBuffer.length > 10 * 1024 * 1024) {
+    throw new Error('Image too large (maximum 10MB after resizing)');
+  }
+
+  return processedBuffer;
 }
 
 // ANALYZE PHOTOS FUNCTION
