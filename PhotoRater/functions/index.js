@@ -118,16 +118,21 @@ async function analyzeImageWithGemini(photoUrl, criteria, model, filesToCleanup)
     console.log(`Processing photo: ${photoUrl} with criteria: ${criteria}`);
 
     let filePath;
+    let bucket = admin.storage().bucket();
     if (photoUrl.includes('firebasestorage.googleapis.com')) {
-      const matches = photoUrl.match(/o\/(.+?)\?/);
-      if (matches && matches[1]) {
-        filePath = decodeURIComponent(matches[1]);
+      const pathMatch = photoUrl.match(/o\/(.+?)\?/);
+      if (pathMatch && pathMatch[1]) {
+        filePath = decodeURIComponent(pathMatch[1]);
+      }
+      const bucketMatch = photoUrl.match(/v0\/b\/([^/]+)/);
+      if (bucketMatch && bucketMatch[1] && bucketMatch[1] !== bucket.name) {
+        console.log(`Using bucket from URL: ${bucketMatch[1]}`);
+        bucket = admin.storage().bucket(bucketMatch[1]);
       }
     }
 
     const fileName = filePath ? filePath.split('/').pop() : 'uploaded_photo';
 
-    const bucket = admin.storage().bucket();
     file = bucket.file(filePath);
     if (filesToCleanup) {
       filesToCleanup.push(file);
