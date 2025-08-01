@@ -359,7 +359,8 @@ struct ContentView: View {
     }
     
     private var resultsPhotoCards: some View {
-        VStack(spacing: 16) {
+        let columns = [GridItem(.flexible()), GridItem(.flexible())]
+        LazyVGrid(columns: columns, spacing: 16) {
             ForEach(rankedPhotos) { photo in
                 PhotoResultCard(rankedPhoto: photo)
             }
