@@ -102,16 +102,20 @@ class PhotoProcessor: ObservableObject {
                 print("🚨 Image \(index) too small: \(imageSize)")
                 return false
             }
-            
+
             // Check for valid image data
             guard let imageData = image.jpegData(compressionQuality: 1.0) else {
                 print("🚨 Image \(index) failed to convert to JPEG")
                 return false
             }
-            
-            // Check file size only
+
+            // If file is too large try optimizing before rejecting
             if imageData.count > maxFileSize {
-                print("🚨 Image \(index) file size too large: \(imageData.count) bytes")
+                print("⚠️ Image \(index) initial size too large: \(imageData.count) bytes, attempting compression")
+                if let reduced = optimizeImageForAI(image), reduced.count <= maxFileSize {
+                    continue
+                }
+                print("🚨 Image \(index) still too large after compression")
                 return false
             }
         }
@@ -239,21 +243,32 @@ class PhotoProcessor: ObservableObject {
             resizedImage = image
         }
         
-        // QUALITY FIRST: High quality compression
-        guard let jpegData = resizedImage.jpegData(compressionQuality: 0.95) else {  // 95% quality
+        // QUALITY FIRST: High quality compression with adaptive fallback
+        var quality: CGFloat = 0.95
+        guard var jpegData = resizedImage.jpegData(compressionQuality: quality) else {
             print("❌ Failed to create JPEG data")
             return nil
         }
-        
-        let fileSizeKB = jpegData.count / 1024
+
+        var fileSizeKB = jpegData.count / 1024
         print("Final image: \(Int(resizedImage.size.width))x\(Int(resizedImage.size.height))px, \(fileSizeKB)KB")
-        
-        // Only reduce quality if file is extremely large
-        if fileSizeKB > 8000 {  // 8MB threshold
-            print("Very large file, reducing quality slightly")
-            return resizedImage.jpegData(compressionQuality: 0.90)
+
+        while jpegData.count > maxFileSize && quality > 0.6 {
+            quality -= 0.05
+            print("Compressing further to quality \(quality)")
+            if let data = resizedImage.jpegData(compressionQuality: quality) {
+                jpegData = data
+                fileSizeKB = jpegData.count / 1024
+            } else {
+                break
+            }
         }
-        
+
+        if jpegData.count > maxFileSize {
+            print("🚨 Unable to compress below limit")
+            return nil
+        }
+
         return jpegData
     }
     
