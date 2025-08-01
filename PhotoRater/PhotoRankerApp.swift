@@ -15,7 +15,7 @@ struct PhotoRaterApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
                 .onAppear {
                     // Ensure Firebase is configured
                     if FirebaseApp.app() == nil {
