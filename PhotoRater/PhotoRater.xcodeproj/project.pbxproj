@@ -28,6 +28,15 @@
 		AB65586D2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB65586E2DB388DC00113CFF /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB65586B2DB388D100113CFF /* AuthenticationService.swift */; };
 		AB6806422E3DA3A6007BA588 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806412E3DA3A6007BA588 /* MainTabView.swift */; };
+		AB6806442E3DA742007BA588 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806432E3DA742007BA588 /* AccountView.swift */; };
+		AB68064C2E3DA776007BA588 /* PhotosPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806492E3DA776007BA588 /* PhotosPicker.swift */; };
+		AB68064D2E3DA776007BA588 /* ProcessingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB68064A2E3DA776007BA588 /* ProcessingOverlay.swift */; };
+		AB68064E2E3DA776007BA588 /* CriteriaButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806462E3DA776007BA588 /* CriteriaButton.swift */; };
+		AB68064F2E3DA776007BA588 /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806472E3DA776007BA588 /* PhotoDetailView.swift */; };
+		AB6806502E3DA776007BA588 /* PhotoResultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806482E3DA776007BA588 /* PhotoResultCard.swift */; };
+		AB6806522E3DA77F007BA588 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806512E3DA77F007BA588 /* GalleryView.swift */; };
+		AB6806542E3DA792007BA588 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */; };
+		AB6806562E3DA79E007BA588 /* ProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */; };
 		AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */; };
 		AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
@@ -104,6 +113,15 @@
 		AB496C162DDF0C9A00B87CA6 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		AB65586B2DB388D100113CFF /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		AB6806412E3DA3A6007BA588 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		AB6806432E3DA742007BA588 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		AB6806462E3DA776007BA588 /* CriteriaButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CriteriaButton.swift; sourceTree = "<group>"; };
+		AB6806472E3DA776007BA588 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
+		AB6806482E3DA776007BA588 /* PhotoResultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoResultCard.swift; sourceTree = "<group>"; };
+		AB6806492E3DA776007BA588 /* PhotosPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosPicker.swift; sourceTree = "<group>"; };
+		AB68064A2E3DA776007BA588 /* ProcessingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingOverlay.swift; sourceTree = "<group>"; };
+		AB6806512E3DA77F007BA588 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
+		AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDetailView.swift; sourceTree = "<group>"; };
 		AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeManager.swift; sourceTree = "<group>"; };
 		AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeView.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -212,6 +230,18 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		AB68064B2E3DA776007BA588 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AB6806462E3DA776007BA588 /* CriteriaButton.swift */,
+				AB6806472E3DA776007BA588 /* PhotoDetailView.swift */,
+				AB6806482E3DA776007BA588 /* PhotoResultCard.swift */,
+				AB6806492E3DA776007BA588 /* PhotosPicker.swift */,
+				AB68064A2E3DA776007BA588 /* ProcessingOverlay.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		AB80326F2DB18F4A0005A7DC = {
 			isa = PBXGroup;
 			children = (
@@ -263,9 +293,14 @@
 		AB8032BD2DB33CCF0005A7DC /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				AB6806432E3DA742007BA588 /* AccountView.swift */,
+				AB68064B2E3DA776007BA588 /* Components */,
 				AB80327D2DB18F4A0005A7DC /* ContentView.swift */,
+				AB6806512E3DA77F007BA588 /* GalleryView.swift */,
 				AB6806412E3DA3A6007BA588 /* MainTabView.swift */,
 				AB496BEF2DDF085600B87CA6 /* PricingView.swift */,
+				AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */,
+				AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */,
 				AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */,
 				AB8032BE2DB33CE70005A7DC /* Components */,
 			);
@@ -558,14 +593,23 @@
 				AB8032A72DB191900005A7DC /* AppDelegate.swift in Sources */,
 				AB496BE82DDEF2B100B87CA6 /* PhotoDetailView.swift in Sources */,
 				AB496BD32DDEBACD00B87CA6 /* FirebaseResponse.swift in Sources */,
+				AB6806562E3DA79E007BA588 /* ProfileDetailView.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
+				AB6806542E3DA792007BA588 /* PrivacyPolicyView.swift in Sources */,
 				AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */,
+				AB68064C2E3DA776007BA588 /* PhotosPicker.swift in Sources */,
+				AB68064D2E3DA776007BA588 /* ProcessingOverlay.swift in Sources */,
+				AB68064E2E3DA776007BA588 /* CriteriaButton.swift in Sources */,
+				AB68064F2E3DA776007BA588 /* PhotoDetailView.swift in Sources */,
+				AB6806502E3DA776007BA588 /* PhotoResultCard.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
 				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
+				AB6806442E3DA742007BA588 /* AccountView.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
+				AB6806522E3DA77F007BA588 /* GalleryView.swift in Sources */,
 				AB6806422E3DA3A6007BA588 /* MainTabView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
