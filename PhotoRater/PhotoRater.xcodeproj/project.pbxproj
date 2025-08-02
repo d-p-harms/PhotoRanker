@@ -37,6 +37,7 @@
 		AB6806522E3DA77F007BA588 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806512E3DA77F007BA588 /* GalleryView.swift */; };
 		AB6806542E3DA792007BA588 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */; };
 		AB6806562E3DA79E007BA588 /* ProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */; };
+		AB6806752E3DAA5B007BA588 /* GalleryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806742E3DAA5B007BA588 /* GalleryManager.swift */; };
 		AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */; };
 		AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
@@ -122,6 +123,7 @@
 		AB6806512E3DA77F007BA588 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
 		AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDetailView.swift; sourceTree = "<group>"; };
+		AB6806742E3DAA5B007BA588 /* GalleryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryManager.swift; sourceTree = "<group>"; };
 		AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeManager.swift; sourceTree = "<group>"; };
 		AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeView.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -322,6 +324,7 @@
 		AB8032C72DB33DB60005A7DC /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				AB6806742E3DAA5B007BA588 /* GalleryManager.swift */,
 				AB496BED2DDF083400B87CA6 /* PricingManager.swift */,
 				AB8032C82DB33DC10005A7DC /* PhotoProcessor.swift */,
 				AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */,
@@ -606,6 +609,7 @@
 				AB68064F2E3DA776007BA588 /* PhotoDetailView.swift in Sources */,
 				AB6806502E3DA776007BA588 /* PhotoResultCard.swift in Sources */,
 				AB8032AA2DB334460005A7DC /* RankingCriteria.swift in Sources */,
+				AB6806752E3DAA5B007BA588 /* GalleryManager.swift in Sources */,
 				ABFDC0CF2E3306FD0074935A /* PhotoRankerApp.swift in Sources */,
 				AB6806442E3DA742007BA588 /* AccountView.swift in Sources */,
 				AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */,
