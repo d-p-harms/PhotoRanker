@@ -87,23 +87,24 @@ exports.analyzePhotos = onCall({
 
     const concurrencyLimit = 6;
     const batches = [];
-    
+
     for (let i = 0; i < photos.length; i += concurrencyLimit) {
-      batches.push(photos.slice(i, i + concurrencyLimit));
+      batches.push({ start: i, items: photos.slice(i, i + concurrencyLimit) });
     }
 
     let allResults = [];
-    for (const [batchIndex, batch] of batches.entries()) {
-      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} photos)`);
+    for (const [batchIndex, batchInfo] of batches.entries()) {
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batchInfo.items.length} photos)`);
 
-      const batchPromises = batch.map(async (data, index) => {
+      const batchPromises = batchInfo.items.map(async (data, index) => {
+        const globalIndex = batchInfo.start + index;
         try {
           await new Promise(resolve => setTimeout(resolve, index * 200));
-          return await analyzeImageWithGemini(data, criteria, model);
+          return await analyzeImageWithGemini(data, criteria, model, globalIndex);
         } catch (error) {
           console.error(`Error in batch ${batchIndex + 1}, photo ${index + 1}:`, error);
           return {
-            fileName: `photo_${index}`,
+            fileName: `photo_${globalIndex}`,
             storageURL: '',
             score: 70,
             tags: [],
@@ -147,7 +148,7 @@ exports.analyzePhotos = onCall({
   }
 });
 
-async function analyzeImageWithGemini(photoData, criteria, model) {
+async function analyzeImageWithGemini(photoData, criteria, model, index) {
   try {
     console.log(`Processing photo with criteria: ${criteria}`);
 
@@ -163,7 +164,7 @@ async function analyzeImageWithGemini(photoData, criteria, model) {
     const flaggedLevels = ['LIKELY', 'VERY_LIKELY'];
     if (flaggedLevels.includes(safe.adult) || flaggedLevels.includes(safe.violence) || flaggedLevels.includes(safe.racy)) {
       console.warn('SafeSearch blocked image:', safe);
-      return createRejectedResponse('photo', '', 'Image violates content policy');
+      return createRejectedResponse(`photo_${index}`, '', 'Image violates content policy');
     }
 
     const base64Image = processedBuffer.toString('base64');
@@ -185,17 +186,17 @@ async function analyzeImageWithGemini(photoData, criteria, model) {
     
     console.log('Analysis complete');
 
-    return parseGeminiResponse(text, 'photo', '', criteria);
+    return parseGeminiResponse(text, `photo_${index}`, '', criteria);
     
   } catch (error) {
     console.error('Error in analyzeImageWithGemini:', error);
     
     // Enhanced error handling for image processing errors
     if (error.message.includes('too small') || error.message.includes('too large')) {
-      return createRejectedResponse('photo', '', error.message);
+      return createRejectedResponse(`photo_${index}`, '', error.message);
     }
     
-    return createFallbackResponse('photo', '', criteria);
+    return createFallbackResponse(`photo_${index}`, '', criteria);
   }
 }
 

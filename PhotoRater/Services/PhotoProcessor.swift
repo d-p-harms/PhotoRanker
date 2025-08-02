@@ -444,7 +444,7 @@ class PhotoProcessor: ObservableObject {
                     }
                 }
                 
-                let rankedPhoto = RankedPhoto(
+                var rankedPhoto = RankedPhoto(
                     id: UUID(),
                     fileName: fileName,
                     storageURL: storageURL,
@@ -458,7 +458,13 @@ class PhotoProcessor: ObservableObject {
                     strengths: strengths,
                     nextPhotoSuggestions: nextPhotoSuggestions
                 )
-                
+
+                if let indexString = fileName.split(separator: "_").last,
+                   let index = Int(indexString),
+                   index < originalImages.count {
+                    rankedPhoto.localImage = originalImages[index]
+                }
+
                 rankedPhotos.append(rankedPhoto)
             }
             
