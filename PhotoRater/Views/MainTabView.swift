@@ -2,32 +2,32 @@ import SwiftUI
 
 struct MainTabView: View {
     enum Tab {
-        case analyze
-        case pricing
-        case promo
+        case analysis
+        case gallery
+        case account
     }
 
-    @State private var selectedTab: Tab = .analyze
+    @State private var selectedTab: Tab = .analysis
 
     var body: some View {
         TabView(selection: $selectedTab) {
             ContentView()
                 .tabItem {
-                    Label("Analyze", systemImage: "sparkles.magnifyingglass")
+                    Label("Analysis", systemImage: "sparkles.magnifyingglass")
                 }
-                .tag(Tab.analyze)
+                .tag(Tab.analysis)
 
-            PricingView()
+            GalleryView()
                 .tabItem {
-                    Label("Credits", systemImage: "bolt.fill")
+                    Label("Gallery", systemImage: "photo.on.rectangle.angled")
                 }
-                .tag(Tab.pricing)
+                .tag(Tab.gallery)
 
-            PromoCodeView()
+            AccountView()
                 .tabItem {
-                    Label("Promo", systemImage: "ticket.fill")
+                    Label("Account", systemImage: "person.crop.circle")
                 }
-                .tag(Tab.promo)
+                .tag(Tab.account)
         }
     }
 }
