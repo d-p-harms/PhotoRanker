@@ -464,11 +464,11 @@ function parseEnhancedAIResponse(responseText, criteria, fileName, photoUrl) {
       return {
         fileName: fileName,
         storageURL: photoUrl,
-        score: Math.min(Math.max(parsed.score || 75, 0), 100),
-        visualQuality: Math.min(Math.max(parsed.visualQuality || parsed.score || 75, 0), 100),
-        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore || parsed.score || 75, 0), 100),
-        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore || parsed.score || 75, 0), 100),
-        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness || parsed.score || 75, 0), 100),
+        score: Math.min(Math.max(parsed.score ?? 75, 0), 100),
+        visualQuality: Math.min(Math.max(parsed.visualQuality ?? parsed.score ?? 75, 0), 100),
+        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore ?? parsed.score ?? 75, 0), 100),
+        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore ?? parsed.score ?? 75, 0), 100),
+        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness ?? parsed.score ?? 75, 0), 100),
         
         // Basic fields
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
@@ -524,6 +524,9 @@ function parseEnhancedAIResponse(responseText, criteria, fileName, photoUrl) {
   console.log(`JSON parsing failed for ${criteria}, using enhanced fallback parsing`);
   return createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText);
 }
+
+// Export for testing
+exports.parseEnhancedAIResponse = parseEnhancedAIResponse;
 
 // ENHANCED FALLBACK RESPONSES
 function createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
