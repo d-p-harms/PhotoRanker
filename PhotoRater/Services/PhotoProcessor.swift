@@ -648,6 +648,10 @@ class PhotoProcessor: ObservableObject {
                     categories.append("activity")
                 case .personality:
                     categories.append("personality")
+                case .confident:
+                    categories.append("confident")
+                case .outdoors:
+                    categories.append("outdoors")
                 }
             }
         }
