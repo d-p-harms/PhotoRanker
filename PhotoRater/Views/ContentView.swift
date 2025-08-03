@@ -457,7 +457,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     switch status {
                     case .resizing(let current, let total):
-                        self.processingMessage = "Optimizing photos (\(current)/\(total))"
+                        self.processingMessage = "Resizing photo \(current) of \(total)"
                         self.processingProgress = Double(current) / Double(total)
                     case .processingBatch(let current, let total):
                         self.processingMessage = "Processing batch \(current) of \(total)"
