@@ -165,11 +165,22 @@ exports.analyzePhotos = onCall({
 
 // ENHANCED IMAGE ANALYSIS WITH GEMINI
 async function analyzeImageWithGemini(photoData, criteria, model, index) {
+  const timeout = 30000; // 30 second timeout
+
+  return Promise.race([
+    performAnalysis(photoData, criteria, model, index),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Analysis timeout')), timeout)
+    )
+  ]);
+}
+
+async function performAnalysis(photoData, criteria, model, index) {
   try {
     console.log(`Processing photo ${index} with criteria: ${criteria}`);
 
     const buffer = Buffer.from(photoData, 'base64');
-    
+
     // Enhanced image processing with validation
     const processedBuffer = await validateAndPrepareImage(buffer);
     console.log(`Enhanced image processing complete, new size: ${processedBuffer.length} bytes`);
@@ -182,38 +193,49 @@ async function analyzeImageWithGemini(photoData, criteria, model, index) {
 
     const base64Image = processedBuffer.toString('base64');
     const prompt = buildEnhancedCriteriaPrompt(criteria);
-    
+
     console.log(`Analyzing image with ${criteria} prompt (${prompt.length} chars)`);
-    
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Image
-        }
+
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: base64Image
+            }
+          }
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        console.log(`Raw AI response for ${criteria} (${text.length} chars):`, text.substring(0, 200));
+
+        const analysisResult = parseEnhancedAIResponse(text, criteria, `photo_${index}`, '');
+        console.log(`Parsed ${criteria} analysis:`, {
+          score: analysisResult.score,
+          hasStrengths: analysisResult.strengths?.length > 0,
+          hasImprovements: analysisResult.improvements?.length > 0
+        });
+
+        return analysisResult;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
       }
-    ]);
-        
-    const response = await result.response;
-    const text = response.text();
-    console.log(`Raw AI response for ${criteria} (${text.length} chars):`, text.substring(0, 200));
-    
-    const analysisResult = parseEnhancedAIResponse(text, criteria, `photo_${index}`, '');
-    console.log(`Parsed ${criteria} analysis:`, {
-      score: analysisResult.score,
-      hasStrengths: analysisResult.strengths?.length > 0,
-      hasImprovements: analysisResult.improvements?.length > 0
-    });
-    
-    return analysisResult;
+    }
   } catch (error) {
-    console.error(`Error processing photo ${index}:`, error);
-    
+    console.error(`Analysis failed for photo ${index}:`, error);
+
     if (error.message.includes('too small') || error.message.includes('too large')) {
       return createRejectedResponse(`photo_${index}`, '', error.message);
     }
-    
+
     return createFallbackResponse(`photo_${index}`, '', criteria, error.message);
   }
 }
