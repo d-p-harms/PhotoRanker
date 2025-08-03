@@ -19,6 +19,7 @@ struct RankedPhoto: Identifiable {
     let categorization: Categorization?
     let psychologicalInsights: PsychologicalInsights?
     let competitiveAnalysis: CompetitiveAnalysis?
+    let strategicAdvice: StrategicAdvice?
     
     var localImage: UIImage?
     
@@ -42,6 +43,7 @@ struct RankedPhoto: Identifiable {
         self.categorization = nil
         self.psychologicalInsights = nil
         self.competitiveAnalysis = nil
+        self.strategicAdvice = nil
     }
     
     // Full initializer with all AI data
@@ -54,7 +56,8 @@ struct RankedPhoto: Identifiable {
          nextPhotoSuggestions: [String]? = nil,
          categorization: Categorization? = nil,
          psychologicalInsights: PsychologicalInsights? = nil,
-         competitiveAnalysis: CompetitiveAnalysis? = nil) {
+         competitiveAnalysis: CompetitiveAnalysis? = nil,
+         strategicAdvice: StrategicAdvice? = nil) {
         
         self.id = id
         self.fileName = fileName
@@ -74,6 +77,7 @@ struct RankedPhoto: Identifiable {
         self.categorization = categorization
         self.psychologicalInsights = psychologicalInsights
         self.competitiveAnalysis = competitiveAnalysis
+        self.strategicAdvice = strategicAdvice
     }
     
     // Helper method to create a copy with updated reason
@@ -93,7 +97,8 @@ struct RankedPhoto: Identifiable {
             nextPhotoSuggestions: self.nextPhotoSuggestions,
             categorization: self.categorization,
             psychologicalInsights: self.psychologicalInsights,
-            competitiveAnalysis: self.competitiveAnalysis
+            competitiveAnalysis: self.competitiveAnalysis,
+            strategicAdvice: self.strategicAdvice
         )
     }
 }
@@ -124,16 +129,24 @@ struct TechnicalFeedback: Codable {
     let lighting: String?
     let composition: String?
     let styling: String?
-    
+    let editing: String?
+    let angle: String?
+
     var hasAnyFeedback: Bool {
-        return lighting != nil || composition != nil || styling != nil
+        return lighting != nil || composition != nil || styling != nil || editing != nil || angle != nil
     }
 }
 
 struct DatingInsights: Codable {
     let personalityProjected: [String]?
+    let emotionalIntelligence: String?
     let demographicAppeal: String?
+    let marketPositioning: String?
     let profileRole: String?
+    let conversationStarters: [String]?
+    let approachabilityFactor: Double?
+    let confidenceLevel: Double?
+    let authenticityLevel: Double?
     
     var topPersonalityTraits: [String] {
         return Array((personalityProjected ?? []).prefix(3))
@@ -146,6 +159,7 @@ struct Categorization: Codable {
     let personalityScore: Double
     let primaryCategory: String
     let categoryConfidence: Double
+    let categoryReasoning: String?
 }
 
 struct PsychologicalInsights: Codable {
@@ -162,4 +176,10 @@ struct CompetitiveAnalysis: Codable {
     let uniqueElements: [String]?
     let marketAdvantages: [String]?
     let improvementPotential: [String]?
+}
+
+struct StrategicAdvice: Codable {
+    let immediateImprovements: [String]?
+    let profilePositioning: String?
+    let competitiveAdvantage: String?
 }
