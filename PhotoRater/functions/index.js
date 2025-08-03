@@ -405,11 +405,11 @@ function parseEnhancedPracticalResponse(responseText, criteria, fileName, photoU
       const result = {  
         fileName: fileName,
         storageURL: photoUrl,
-        score: Math.min(Math.max(parsed.overallScore || parsed.score || 75, 0), 100),
-        visualQuality: Math.min(Math.max(parsed.visualQuality || 75, 0), 100),
-        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore || 75, 0), 100),
-        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore || 75, 0), 100),
-        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness || 75, 0), 100),
+        score: Math.min(Math.max(parsed.overallScore ?? parsed.score ?? 75, 0), 100),
+        visualQuality: Math.min(Math.max(parsed.visualQuality ?? 75, 0), 100),
+        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore ?? 75, 0), 100),
+        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore ?? 75, 0), 100),
+        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness ?? 75, 0), 100),
         
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         
@@ -472,6 +472,12 @@ function parseEnhancedPracticalResponse(responseText, criteria, fileName, photoU
   console.log(`JSON parsing failed for ${criteria}, using enhanced practical fallback parsing`);
   return createEnhancedPracticalFallback(fileName, photoUrl, criteria, responseText);
 }
+
+function parseEnhancedAIResponse(responseText, criteria, fileName, photoUrl) {
+  return parseEnhancedPracticalResponse(responseText, criteria, fileName, photoUrl);
+}
+
+exports.parseEnhancedAIResponse = parseEnhancedAIResponse;
 
 // INTELLIGENT CATEGORIZATION INFERENCE
 function inferCategorizationFromContent(parsed, responseText) {
