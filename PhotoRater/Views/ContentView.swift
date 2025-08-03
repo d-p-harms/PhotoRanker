@@ -315,6 +315,10 @@ struct ContentView: View {
             }
         }
         .navigationViewStyle(.stack)
+        // Clear previous results when switching analysis criteria
+        .onChange(of: selectedCriteria) { _ in
+            rankedPhotos = []
+        }
     }
     
     // MARK: - Computed Properties
