@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var selectedImages: [UIImage] = []
     @State private var rankedPhotos: [RankedPhoto] = []
     @State private var isProcessing = false
+    @State private var processingMessage = ""
+    @State private var processingProgress: Double? = nil
     @State private var showingImagePicker = false
     @State private var showingPricingView = false
     @State private var showingPromoCodeView = false
@@ -302,8 +304,8 @@ struct ContentView: View {
                 Group {
                     if isProcessing {
                         ProcessingOverlay(
-                            message: getProcessingMessage(),
-                            progress: nil
+                            message: processingMessage,
+                            progress: processingProgress
                         )
                     }
                 }
@@ -439,10 +441,24 @@ struct ContentView: View {
         isProcessing = true
         errorMessage = nil
         rankedPhotos = []
-        
+        processingMessage = getProcessingMessage()
+        processingProgress = nil
+
         PhotoProcessor.shared.rankPhotos(
             images: selectedImages,
-            criteria: selectedCriteria
+            criteria: selectedCriteria,
+            progress: { status in
+                DispatchQueue.main.async {
+                    switch status {
+                    case .resizing(let current, let total):
+                        self.processingMessage = "Optimizing photos (\(current)/\(total))"
+                        self.processingProgress = Double(current) / Double(total)
+                    case .processingBatch(let current, let total):
+                        self.processingMessage = "Processing batch \(current) of \(total)"
+                        self.processingProgress = Double(current) / Double(total)
+                    }
+                }
+            }
         ) { result in
             DispatchQueue.main.async {
                 self.isProcessing = false
