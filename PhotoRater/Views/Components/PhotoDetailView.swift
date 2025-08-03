@@ -26,6 +26,11 @@ struct PhotoDetailView: View {
                     if let scores = rankedPhoto.detailedScores {
                         qualityBreakdownSection(scores)
                     }
+
+                    // Categorization
+                    if let cat = rankedPhoto.categorization {
+                        categorizationSection(cat)
+                    }
                     
                     // Strengths
                     if let strengths = rankedPhoto.strengths, !strengths.isEmpty {
@@ -45,6 +50,16 @@ struct PhotoDetailView: View {
                     // Dating Insights
                     if let insights = rankedPhoto.datingInsights {
                         datingInsightsSection(insights)
+                    }
+
+                    // Psychological Insights
+                    if let psycho = rankedPhoto.psychologicalInsights {
+                        psychologicalInsightsSection(psycho)
+                    }
+
+                    // Competitive Analysis
+                    if let analysis = rankedPhoto.competitiveAnalysis {
+                        competitiveAnalysisSection(analysis)
                     }
                     
                     // Next Photo Suggestions
@@ -284,6 +299,81 @@ struct PhotoDetailView: View {
         .background(Color.purple.opacity(0.1))
         .cornerRadius(12)
     }
+
+    private func categorizationSection(_ cat: Categorization) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Photo Categorization")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            VStack(spacing: 8) {
+                CategoryRow(title: "Social", score: cat.socialScore, color: .blue)
+                CategoryRow(title: "Activity", score: cat.activityScore, color: .green)
+                CategoryRow(title: "Personality", score: cat.personalityScore, color: .purple)
+            }
+
+            Text("Primary: \(cat.primaryCategory.capitalized) (\(Int(cat.categoryConfidence))% confidence)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+
+    private func psychologicalInsightsSection(_ insights: PsychologicalInsights) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Psychological Insights")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            if let confidence = insights.confidence, !confidence.isEmpty {
+                bulletList(title: "Confidence Indicators", items: confidence)
+            }
+            if let authenticity = insights.authenticity {
+                textRow(title: "Authenticity", value: authenticity)
+            }
+            if let emotional = insights.emotionalIntelligence {
+                textRow(title: "Emotional Intelligence", value: emotional)
+            }
+            if let market = insights.marketPositioning {
+                textRow(title: "Market Positioning", value: market)
+            }
+            if let impact = insights.psychologicalImpact {
+                textRow(title: "Psychological Impact", value: impact)
+            }
+            if let trust = insights.trustworthiness {
+                textRow(title: "Trustworthiness", value: trust)
+            }
+            if let approach = insights.approachability {
+                textRow(title: "Approachability", value: approach)
+            }
+        }
+        .padding()
+        .background(Color.yellow.opacity(0.1))
+        .cornerRadius(12)
+    }
+
+    private func competitiveAnalysisSection(_ analysis: CompetitiveAnalysis) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Competitive Analysis")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            if let unique = analysis.uniqueElements, !unique.isEmpty {
+                bulletList(title: "Unique Elements", items: unique)
+            }
+            if let advantages = analysis.marketAdvantages, !advantages.isEmpty {
+                bulletList(title: "Market Advantages", items: advantages)
+            }
+            if let improvements = analysis.improvementPotential, !improvements.isEmpty {
+                bulletList(title: "Improvement Potential", items: improvements)
+            }
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(12)
+    }
     
     private func nextPhotoSuggestionsSection(_ suggestions: [String]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -311,6 +401,35 @@ struct PhotoDetailView: View {
         .padding()
         .background(Color.blue.opacity(0.1))
         .cornerRadius(12)
+    }
+
+    private func bulletList(title: String, items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                        .font(.subheadline)
+                    Text(item)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func textRow(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+            Text(value)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
     }
     
     // Helper functions for quality descriptions
@@ -473,6 +592,30 @@ struct TechnicalFeedbackRow: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct CategoryRow: View {
+    let title: String
+    let score: Double
+    let color: Color
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Spacer()
+
+            ProgressView(value: score / 100)
+                .progressViewStyle(LinearProgressViewStyle(tint: color))
+                .frame(width: 100)
+
+            Text("\(Int(score))")
+                .font(.caption)
+                .foregroundColor(color)
         }
     }
 }

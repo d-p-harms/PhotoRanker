@@ -16,6 +16,9 @@ struct RankedPhoto: Identifiable {
     let improvements: [String]?
     let strengths: [String]?
     let nextPhotoSuggestions: [String]?
+    let categorization: Categorization?
+    let psychologicalInsights: PsychologicalInsights?
+    let competitiveAnalysis: CompetitiveAnalysis?
     
     var localImage: UIImage?
     
@@ -36,6 +39,9 @@ struct RankedPhoto: Identifiable {
         self.improvements = nil
         self.strengths = nil
         self.nextPhotoSuggestions = nil
+        self.categorization = nil
+        self.psychologicalInsights = nil
+        self.competitiveAnalysis = nil
     }
     
     // Full initializer with all AI data
@@ -45,7 +51,10 @@ struct RankedPhoto: Identifiable {
          datingInsights: DatingInsights? = nil,
          improvements: [String]? = nil,
          strengths: [String]? = nil,
-         nextPhotoSuggestions: [String]? = nil) {
+         nextPhotoSuggestions: [String]? = nil,
+         categorization: Categorization? = nil,
+         psychologicalInsights: PsychologicalInsights? = nil,
+         competitiveAnalysis: CompetitiveAnalysis? = nil) {
         
         self.id = id
         self.fileName = fileName
@@ -62,6 +71,9 @@ struct RankedPhoto: Identifiable {
         self.improvements = improvements
         self.strengths = strengths
         self.nextPhotoSuggestions = nextPhotoSuggestions
+        self.categorization = categorization
+        self.psychologicalInsights = psychologicalInsights
+        self.competitiveAnalysis = competitiveAnalysis
     }
     
     // Helper method to create a copy with updated reason
@@ -78,7 +90,10 @@ struct RankedPhoto: Identifiable {
             datingInsights: self.datingInsights,
             improvements: self.improvements,
             strengths: self.strengths,
-            nextPhotoSuggestions: self.nextPhotoSuggestions
+            nextPhotoSuggestions: self.nextPhotoSuggestions,
+            categorization: self.categorization,
+            psychologicalInsights: self.psychologicalInsights,
+            competitiveAnalysis: self.competitiveAnalysis
         )
     }
 }
@@ -123,4 +138,28 @@ struct DatingInsights: Codable {
     var topPersonalityTraits: [String] {
         return Array((personalityProjected ?? []).prefix(3))
     }
+}
+
+struct Categorization: Codable {
+    let socialScore: Double
+    let activityScore: Double
+    let personalityScore: Double
+    let primaryCategory: String
+    let categoryConfidence: Double
+}
+
+struct PsychologicalInsights: Codable {
+    let confidence: [String]?
+    let authenticity: String?
+    let emotionalIntelligence: String?
+    let marketPositioning: String?
+    let psychologicalImpact: String?
+    let trustworthiness: String?
+    let approachability: String?
+}
+
+struct CompetitiveAnalysis: Codable {
+    let uniqueElements: [String]?
+    let marketAdvantages: [String]?
+    let improvementPotential: [String]?
 }

@@ -390,6 +390,40 @@ class PhotoProcessor: ObservableObject {
                 var strengths: [String]? = result["strengths"] as? [String]
                 var improvements: [String]? = result["improvements"] as? [String] ?? result["suggestions"] as? [String]
                 var nextPhotoSuggestions: [String]? = result["nextPhotoSuggestions"] as? [String]
+
+                // Parse new categorization and insight fields
+                var categorization: Categorization? = nil
+                if let cat = result["categorization"] as? [String: Any] {
+                    categorization = Categorization(
+                        socialScore: cat["socialScore"] as? Double ?? Double(cat["socialScore"] as? Int ?? 0),
+                        activityScore: cat["activityScore"] as? Double ?? Double(cat["activityScore"] as? Int ?? 0),
+                        personalityScore: cat["personalityScore"] as? Double ?? Double(cat["personalityScore"] as? Int ?? 0),
+                        primaryCategory: cat["primaryCategory"] as? String ?? "general",
+                        categoryConfidence: cat["categoryConfidence"] as? Double ?? Double(cat["categoryConfidence"] as? Int ?? 0)
+                    )
+                }
+
+                var psychological: PsychologicalInsights? = nil
+                if let psy = result["psychologicalInsights"] as? [String: Any] {
+                    psychological = PsychologicalInsights(
+                        confidence: psy["confidence"] as? [String],
+                        authenticity: psy["authenticity"] as? String,
+                        emotionalIntelligence: psy["emotionalIntelligence"] as? String,
+                        marketPositioning: psy["marketPositioning"] as? String,
+                        psychologicalImpact: psy["psychologicalImpact"] as? String,
+                        trustworthiness: psy["trustworthiness"] as? String,
+                        approachability: psy["approachability"] as? String
+                    )
+                }
+
+                var competitive: CompetitiveAnalysis? = nil
+                if let comp = result["competitiveAnalysis"] as? [String: Any] {
+                    competitive = CompetitiveAnalysis(
+                        uniqueElements: comp["uniqueElements"] as? [String],
+                        marketAdvantages: comp["marketAdvantages"] as? [String],
+                        improvementPotential: comp["improvementPotential"] as? [String]
+                    )
+                }
                 
                 // Handle new criteria specific fields
                 if let conversationElements = result["conversationElements"] as? [String] {
@@ -457,7 +491,10 @@ class PhotoProcessor: ObservableObject {
                     datingInsights: datingInsights,
                     improvements: improvements,
                     strengths: strengths,
-                    nextPhotoSuggestions: nextPhotoSuggestions
+                    nextPhotoSuggestions: nextPhotoSuggestions,
+                    categorization: categorization,
+                    psychologicalInsights: psychological,
+                    competitiveAnalysis: competitive
                 )
 
                 // Attach the originally selected image so the UI can display it
@@ -639,7 +676,14 @@ class PhotoProcessor: ObservableObject {
     private func getPhotoCategories(_ photo: RankedPhoto) -> [String] {
         var categories: [String] = []
         
-        if let tags = photo.tags {
+        if let cat = photo.categorization {
+            if cat.socialScore >= 60 { categories.append("social") }
+            if cat.activityScore >= 60 { categories.append("activity") }
+            if cat.personalityScore >= 60 { categories.append("personality") }
+            if categories.isEmpty {
+                categories.append(cat.primaryCategory)
+            }
+        } else if let tags = photo.tags {
             for tag in tags {
                 switch tag {
                 case .social:
@@ -655,13 +699,13 @@ class PhotoProcessor: ObservableObject {
                 }
             }
         }
-        
+
         // If no specific categories, it's a general photo
         if categories.isEmpty {
             categories.append("general")
         }
-        
-        return categories
+
+        return Array(Set(categories))
     }
 }
 
