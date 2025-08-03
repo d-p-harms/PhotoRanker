@@ -38,6 +38,7 @@
 		AB6806542E3DA792007BA588 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */; };
 		AB6806562E3DA79E007BA588 /* ProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */; };
 		AB6806752E3DAA5B007BA588 /* GalleryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806742E3DAA5B007BA588 /* GalleryManager.swift */; };
+		AB6806772E3F1533007BA588 /* GalleryProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6806762E3F1533007BA588 /* GalleryProfile.swift */; };
 		AB6C60C02E37E484005FAD8A /* PromoCodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */; };
 		AB6C60C22E37E497005FAD8A /* PromoCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */; };
 		AB80327E2DB18F4A0005A7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB80327D2DB18F4A0005A7DC /* ContentView.swift */; };
@@ -124,6 +125,7 @@
 		AB6806532E3DA792007BA588 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		AB6806552E3DA79E007BA588 /* ProfileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileDetailView.swift; sourceTree = "<group>"; };
 		AB6806742E3DAA5B007BA588 /* GalleryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryManager.swift; sourceTree = "<group>"; };
+		AB6806762E3F1533007BA588 /* GalleryProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryProfile.swift; sourceTree = "<group>"; };
 		AB6C60BF2E37E484005FAD8A /* PromoCodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeManager.swift; sourceTree = "<group>"; };
 		AB6C60C12E37E497005FAD8A /* PromoCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromoCodeView.swift; sourceTree = "<group>"; };
 		AB8032782DB18F4A0005A7DC /* PhotoRater.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoRater.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -285,6 +287,7 @@
 			isa = PBXGroup;
 			children = (
 				AB8032AE2DB334850005A7DC /* PhotoTag.swift */,
+				AB6806762E3F1533007BA588 /* GalleryProfile.swift */,
 				AB8032AB2DB334660005A7DC /* RankedPhoto.swift */,
 				AB8032A82DB3341E0005A7DC /* RankingCriteria.swift */,
 				AB496BD02DDEBACD00B87CA6 /* FirebaseResponse.swift */,
@@ -599,6 +602,7 @@
 				AB6806562E3DA79E007BA588 /* ProfileDetailView.swift in Sources */,
 				AB8032C22DB33D200005A7DC /* CriteriaButton.swift in Sources */,
 				AB496BEE2DDF083600B87CA6 /* PricingManager.swift in Sources */,
+				AB6806772E3F1533007BA588 /* GalleryProfile.swift in Sources */,
 				AB496BF02DDF085800B87CA6 /* PricingView.swift in Sources */,
 				AB8032C42DB33D330005A7DC /* PhotoResultCard.swift in Sources */,
 				AB6806542E3DA792007BA588 /* PrivacyPolicyView.swift in Sources */,
