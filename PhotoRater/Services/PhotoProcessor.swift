@@ -362,7 +362,9 @@ class PhotoProcessor: ObservableObject {
                     technicalFeedback = TechnicalFeedback(
                         lighting: techFeedback["lighting"] as? String,
                         composition: techFeedback["composition"] as? String,
-                        styling: techFeedback["styling"] as? String
+                        styling: techFeedback["styling"] as? String,
+                        editing: techFeedback["editing"] as? String,
+                        angle: techFeedback["angle"] as? String
                     )
                 }
                 
@@ -371,25 +373,43 @@ class PhotoProcessor: ObservableObject {
                 
                 // Handle different response formats based on criteria
                 var personalityTraits: [String]? = nil
+                var emotionalIntelligence: String? = nil
                 var demographicAppeal: String? = nil
+                var marketPositioning: String? = nil
                 var profileRole: String? = nil
-                
+                var conversationStarters: [String]? = nil
+                var approachabilityFactor: Double? = nil
+                var confidenceLevel: Double? = nil
+                var authenticityLevel: Double? = nil
+
                 if let insights = result["datingInsights"] as? [String: Any] {
                     personalityTraits = insights["personalityProjected"] as? [String]
+                    emotionalIntelligence = insights["emotionalIntelligence"] as? String
                     demographicAppeal = insights["demographicAppeal"] as? String
+                    marketPositioning = insights["marketPositioning"] as? String
                     profileRole = insights["profileRole"] as? String
+                    conversationStarters = insights["conversationStarters"] as? [String]
+                    approachabilityFactor = insights["approachabilityFactor"] as? Double ?? Double(insights["approachabilityFactor"] as? Int ?? 0)
+                    confidenceLevel = insights["confidenceLevel"] as? Double ?? Double(insights["confidenceLevel"] as? Int ?? 0)
+                    authenticityLevel = insights["authenticityLevel"] as? Double ?? Double(insights["authenticityLevel"] as? Int ?? 0)
                 } else {
-                    // Handle new criteria response formats
+                    // Handle older/new criteria response formats
                     personalityTraits = result["personalityTraits"] as? [String] ?? result["naturalElements"] as? [String]
                     demographicAppeal = result["targetDemographics"] as? String ?? result["appealBreadth"] as? String
                     profileRole = result["positioningAdvice"] as? String ?? result["conversationAdvice"] as? String ?? result["profileRole"] as? String
                 }
-                
-                if personalityTraits != nil || demographicAppeal != nil || profileRole != nil {
+
+                if personalityTraits != nil || emotionalIntelligence != nil || demographicAppeal != nil || marketPositioning != nil || profileRole != nil || conversationStarters != nil || approachabilityFactor != nil || confidenceLevel != nil || authenticityLevel != nil {
                     datingInsights = DatingInsights(
                         personalityProjected: personalityTraits,
+                        emotionalIntelligence: emotionalIntelligence,
                         demographicAppeal: demographicAppeal,
-                        profileRole: profileRole
+                        marketPositioning: marketPositioning,
+                        profileRole: profileRole,
+                        conversationStarters: conversationStarters,
+                        approachabilityFactor: approachabilityFactor,
+                        confidenceLevel: confidenceLevel,
+                        authenticityLevel: authenticityLevel
                     )
                 }
                 
@@ -406,7 +426,8 @@ class PhotoProcessor: ObservableObject {
                         activityScore: cat["activityScore"] as? Double ?? Double(cat["activityScore"] as? Int ?? 0),
                         personalityScore: cat["personalityScore"] as? Double ?? Double(cat["personalityScore"] as? Int ?? 0),
                         primaryCategory: cat["primaryCategory"] as? String ?? "general",
-                        categoryConfidence: cat["categoryConfidence"] as? Double ?? Double(cat["categoryConfidence"] as? Int ?? 0)
+                        categoryConfidence: cat["categoryConfidence"] as? Double ?? Double(cat["categoryConfidence"] as? Int ?? 0),
+                        categoryReasoning: cat["categoryReasoning"] as? String
                     )
                 }
 
@@ -429,6 +450,15 @@ class PhotoProcessor: ObservableObject {
                         uniqueElements: comp["uniqueElements"] as? [String],
                         marketAdvantages: comp["marketAdvantages"] as? [String],
                         improvementPotential: comp["improvementPotential"] as? [String]
+                    )
+                }
+
+                var strategic: StrategicAdvice? = nil
+                if let strategy = result["strategicAdvice"] as? [String: Any] {
+                    strategic = StrategicAdvice(
+                        immediateImprovements: strategy["immediateImprovements"] as? [String],
+                        profilePositioning: strategy["profilePositioning"] as? String,
+                        competitiveAdvantage: strategy["competitiveAdvantage"] as? String
                     )
                 }
                 
@@ -501,7 +531,8 @@ class PhotoProcessor: ObservableObject {
                     nextPhotoSuggestions: nextPhotoSuggestions,
                     categorization: categorization,
                     psychologicalInsights: psychological,
-                    competitiveAnalysis: competitive
+                    competitiveAnalysis: competitive,
+                    strategicAdvice: strategic
                 )
 
                 // Attach the originally selected image so the UI can display it

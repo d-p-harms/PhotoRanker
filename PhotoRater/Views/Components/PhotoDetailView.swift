@@ -46,7 +46,7 @@ struct PhotoDetailView: View {
                     if let technical = rankedPhoto.technicalFeedback, technical.hasAnyFeedback {
                         technicalFeedbackSection(technical)
                     }
-                    
+
                     // Dating Insights
                     if let insights = rankedPhoto.datingInsights {
                         datingInsightsSection(insights)
@@ -61,7 +61,12 @@ struct PhotoDetailView: View {
                     if let analysis = rankedPhoto.competitiveAnalysis {
                         competitiveAnalysisSection(analysis)
                     }
-                    
+
+                    // Strategic Advice
+                    if let strategy = rankedPhoto.strategicAdvice {
+                        strategicAdviceSection(strategy)
+                    }
+
                     // Next Photo Suggestions
                     if let suggestions = rankedPhoto.nextPhotoSuggestions, !suggestions.isEmpty {
                         nextPhotoSuggestionsSection(suggestions)
@@ -237,6 +242,14 @@ struct PhotoDetailView: View {
             if let styling = technical.styling {
                 TechnicalFeedbackRow(title: "Styling", feedback: styling, icon: "tshirt.fill")
             }
+
+            if let editing = technical.editing {
+                TechnicalFeedbackRow(title: "Editing", feedback: editing, icon: "wand.and.stars")
+            }
+
+            if let angle = technical.angle {
+                TechnicalFeedbackRow(title: "Angle", feedback: angle, icon: "arrow.triangle.2.circlepath.camera")
+            }
         }
         .padding()
         .background(Color(.systemGray6))
@@ -283,7 +296,7 @@ struct PhotoDetailView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             if let role = insights.profileRole {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Best Used As:")
@@ -293,6 +306,30 @@ struct PhotoDetailView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+            }
+
+            if let starters = insights.conversationStarters, !starters.isEmpty {
+                bulletList(title: "Conversation Starters", items: starters)
+            }
+
+            if let approach = insights.approachabilityFactor {
+                CategoryRow(title: "Approachability", score: approach, color: .green)
+            }
+
+            if let confidence = insights.confidenceLevel {
+                CategoryRow(title: "Confidence", score: confidence, color: .orange)
+            }
+
+            if let auth = insights.authenticityLevel {
+                CategoryRow(title: "Authenticity", score: auth, color: .purple)
+            }
+
+            if let emotional = insights.emotionalIntelligence {
+                textRow(title: "Emotional Intelligence", value: emotional)
+            }
+
+            if let market = insights.marketPositioning {
+                textRow(title: "Market Positioning", value: market)
             }
         }
         .padding()
@@ -315,6 +352,12 @@ struct PhotoDetailView: View {
             Text("Primary: \(cat.primaryCategory.capitalized) (\(Int(cat.categoryConfidence))% confidence)")
                 .font(.caption)
                 .foregroundColor(.secondary)
+
+            if let reasoning = cat.categoryReasoning {
+                Text(reasoning)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
         .background(Color(.systemGray6))
@@ -372,6 +415,27 @@ struct PhotoDetailView: View {
         }
         .padding()
         .background(Color.orange.opacity(0.1))
+        .cornerRadius(12)
+    }
+
+    private func strategicAdviceSection(_ strategy: StrategicAdvice) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Strategic Advice")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            if let immediate = strategy.immediateImprovements, !immediate.isEmpty {
+                bulletList(title: "Immediate Improvements", items: immediate)
+            }
+            if let position = strategy.profilePositioning {
+                textRow(title: "Profile Positioning", value: position)
+            }
+            if let advantage = strategy.competitiveAdvantage {
+                textRow(title: "Competitive Advantage", value: advantage)
+            }
+        }
+        .padding()
+        .background(Color.indigo.opacity(0.1))
         .cornerRadius(12)
     }
     
