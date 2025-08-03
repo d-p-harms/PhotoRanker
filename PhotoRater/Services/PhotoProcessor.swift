@@ -6,6 +6,11 @@ import FirebaseFunctions
 import FirebaseAuth
 import ImageIO
 
+enum PhotoProcessingStatus {
+    case resizing(current: Int, total: Int)
+    case processingBatch(current: Int, total: Int)
+}
+
 class PhotoProcessor: ObservableObject {
     static let shared = PhotoProcessor()
     private let functions = Functions.functions()
@@ -26,20 +31,20 @@ class PhotoProcessor: ObservableObject {
     
     private init() {}
     
-    func rankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    func rankPhotos(images: [UIImage], criteria: RankingCriteria, progress: @escaping (PhotoProcessingStatus) -> Void = { _ in }, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         AuthenticationService.shared.ensureAuthenticated { [weak self] authResult in
             guard let self = self else { return }
 
             switch authResult {
             case .success:
-                self.performRankPhotos(images: images, criteria: criteria, completion: completion)
+                self.performRankPhotos(images: images, criteria: criteria, progress: progress, completion: completion)
             case .failure(let error):
                 completion(.failure(error))
             }
         }
     }
 
-    private func performRankPhotos(images: [UIImage], criteria: RankingCriteria, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func performRankPhotos(images: [UIImage], criteria: RankingCriteria, progress: @escaping (PhotoProcessingStatus) -> Void, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
 
         // ESSENTIAL SECURITY: Rate limiting check
         guard checkRateLimit() else {
@@ -66,9 +71,9 @@ class PhotoProcessor: ObservableObject {
         }
 
         // Prepare base64 encoded images
-        switch prepareImageData(images) {
+        switch prepareImageData(images, progress: progress) {
         case .success(let photoData):
-            self.processInBatches(photoData: photoData, criteria: criteria, originalImages: images, completion: completion)
+            self.processInBatches(photoData: photoData, criteria: criteria, originalImages: images, progress: progress, completion: completion)
         case .failure(let error):
             completion(.failure(error))
         }
@@ -124,21 +129,21 @@ class PhotoProcessor: ObservableObject {
     }
 
 
-    private func processInBatches(photoData: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func processInBatches(photoData: [String], criteria: RankingCriteria, originalImages: [UIImage], progress: @escaping (PhotoProcessingStatus) -> Void, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
         // Split into batches if needed
         let batches = photoData.chunked(into: maxBatchSize)
         
         if batches.count == 1 {
-            // Single batch - process normally
+            progress(.processingBatch(current: 1, total: 1))
             analyzeWithGemini(photoData: photoData, criteria: criteria, originalImages: originalImages, completion: completion)
         } else {
             // Multiple batches - process sequentially
-            processBatchesSequentially(batches: batches, criteria: criteria, originalImages: originalImages, completion: completion)
+            processBatchesSequentially(batches: batches, criteria: criteria, originalImages: originalImages, progress: progress, completion: completion)
         }
     }
     
-    private func processBatchesSequentially(batches: [[String]], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
+    private func processBatchesSequentially(batches: [[String]], criteria: RankingCriteria, originalImages: [UIImage], progress: @escaping (PhotoProcessingStatus) -> Void, completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
         var allResults: [RankedPhoto] = []
         var currentBatch = 0
@@ -152,8 +157,9 @@ class PhotoProcessor: ObservableObject {
             }
             
             let batch = batches[currentBatch]
+            progress(.processingBatch(current: currentBatch + 1, total: batches.count))
             print("Processing batch \(currentBatch + 1) of \(batches.count) (\(batch.count) photos)")
-            
+
             analyzeWithGemini(photoData: batch, criteria: criteria, originalImages: originalImages) { result in
                 switch result {
                 case .success(let batchResults):
@@ -173,7 +179,7 @@ class PhotoProcessor: ObservableObject {
                 }
             }
         }
-        
+
         processNextBatch()
     }
     
@@ -274,10 +280,11 @@ class PhotoProcessor: ObservableObject {
     }
     
     // Convert optimized images to base64 strings
-    private func prepareImageData(_ images: [UIImage]) -> Result<[String], Error> {
+    private func prepareImageData(_ images: [UIImage], progress: @escaping (PhotoProcessingStatus) -> Void) -> Result<[String], Error> {
         var encoded: [String] = []
 
         for (index, image) in images.enumerated() {
+            progress(.resizing(current: index + 1, total: images.count))
             guard let optimizedData = optimizeImageForAI(image) else {
                 return .failure(NSError(domain: "PhotoProcessor", code: 1,
                                         userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"]))
