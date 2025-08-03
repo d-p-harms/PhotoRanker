@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var errorMessage: String? = nil
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var selectedPhotoForDetail: RankedPhoto?
     
     @StateObject private var pricingManager = PricingManager.shared
     
@@ -273,8 +274,10 @@ struct ContentView: View {
                             // Single column of photo cards
                             VStack(spacing: 16) {
                                 ForEach(rankedPhotos) { photo in
-                                    PhotoResultCard(rankedPhoto: photo)
-                                        .padding(.horizontal)
+                                    PhotoResultCard(rankedPhoto: photo, onViewDetails: {
+                                        selectedPhotoForDetail = photo
+                                    })
+                                    .padding(.horizontal)
                                 }
                             }
                         }
@@ -292,6 +295,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingPromoCodeView) {
                 PromoCodeView()
+            }
+            .sheet(item: $selectedPhotoForDetail) { photo in
+                PhotoDetailView(rankedPhoto: photo)
             }
             .alert("Error", isPresented: $showingAlert) {
                 Button("OK") {
