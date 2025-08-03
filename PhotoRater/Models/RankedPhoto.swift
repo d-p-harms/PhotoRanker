@@ -47,7 +47,12 @@ struct RankedPhoto: Identifiable {
     }
     
     // Full initializer with all AI data
-    init(id: UUID, fileName: String, storageURL: String, score: Double, tags: [PhotoTag], reason: String,
+    init(id: UUID,
+         fileName: String,
+         storageURL: String?,
+         score: Double,
+         tags: [PhotoTag]?,
+         reason: String?,
          detailedScores: DetailedScores? = nil,
          technicalFeedback: TechnicalFeedback? = nil,
          datingInsights: DatingInsights? = nil,
@@ -58,7 +63,7 @@ struct RankedPhoto: Identifiable {
          psychologicalInsights: PsychologicalInsights? = nil,
          competitiveAnalysis: CompetitiveAnalysis? = nil,
          strategicAdvice: StrategicAdvice? = nil) {
-        
+
         self.id = id
         self.fileName = fileName
         self.storageURL = storageURL
@@ -66,7 +71,7 @@ struct RankedPhoto: Identifiable {
         self.tags = tags
         self.reason = reason
         self.localImage = nil
-        
+
         // Enhanced AI data
         self.detailedScores = detailedScores
         self.technicalFeedback = technicalFeedback
@@ -79,15 +84,15 @@ struct RankedPhoto: Identifiable {
         self.competitiveAnalysis = competitiveAnalysis
         self.strategicAdvice = strategicAdvice
     }
-    
+
     // Helper method to create a copy with updated reason
     func withUpdatedReason(_ newReason: String) -> RankedPhoto {
         return RankedPhoto(
             id: self.id,
             fileName: self.fileName,
-            storageURL: self.storageURL ?? "",
+            storageURL: self.storageURL,
             score: self.score,
-            tags: self.tags ?? [],
+            tags: self.tags,
             reason: newReason,
             detailedScores: self.detailedScores,
             technicalFeedback: self.technicalFeedback,
