@@ -536,10 +536,12 @@ class PhotoProcessor: ObservableObject {
                 )
 
                 // Attach the originally selected image so the UI can display it
-                if let indexString = fileName.split(separator: "_").last,
-                   let index = Int(indexString),
-                   index < originalImages.count {
-                    rankedPhoto.localImage = originalImages[index]
+                if let lastComponent = fileName.split(separator: "_").last {
+                    // Support filenames with or without extensions
+                    let indexString = lastComponent.split(separator: ".").first ?? lastComponent
+                    if let index = Int(indexString), index < originalImages.count {
+                        rankedPhoto.localImage = originalImages[index]
+                    }
                 }
 
                 rankedPhotos.append(rankedPhoto)
