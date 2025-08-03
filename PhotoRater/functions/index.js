@@ -401,11 +401,11 @@ function parseHybridAIResponse(responseText, criteria, fileName, photoUrl) {
       const result = {
         fileName: fileName,
         storageURL: photoUrl,
-        score: Math.min(Math.max(parsed.overallScore || parsed.score || 75, 0), 100),
-        visualQuality: Math.min(Math.max(parsed.visualQuality || 75, 0), 100),
-        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore || 75, 0), 100),
-        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore || 75, 0), 100),
-        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness || 75, 0), 100),
+        score: Math.min(Math.max(parsed.overallScore ?? parsed.score ?? 75, 0), 100),
+        visualQuality: Math.min(Math.max(parsed.visualQuality ?? 75, 0), 100),
+        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore ?? 75, 0), 100),
+        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore ?? 75, 0), 100),
+        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness ?? 75, 0), 100),
         
         // Practical elements (from Document 4)
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
@@ -425,11 +425,11 @@ function parseHybridAIResponse(responseText, criteria, fileName, photoUrl) {
         
         // Essential categorization (from Document 4)
         categorization: parsed.categorization ? {
-          socialScore: Math.min(Math.max(parsed.categorization.socialScore || 0, 0), 100),
-          activityScore: Math.min(Math.max(parsed.categorization.activityScore || 0, 0), 100),
-          personalityScore: Math.min(Math.max(parsed.categorization.personalityScore || 0, 0), 100),
+          socialScore: Math.min(Math.max(parsed.categorization.socialScore ?? 0, 0), 100),
+          activityScore: Math.min(Math.max(parsed.categorization.activityScore ?? 0, 0), 100),
+          personalityScore: Math.min(Math.max(parsed.categorization.personalityScore ?? 0, 0), 100),
           primaryCategory: parsed.categorization.primaryCategory || 'general',
-          categoryConfidence: Math.min(Math.max(parsed.categorization.categoryConfidence || 50, 0), 100)
+          categoryConfidence: Math.min(Math.max(parsed.categorization.categoryConfidence ?? 50, 0), 100)
         } : inferCategorization(parsed.tags, parsed.strengths),
         
         // Basic dating insights (from Document 4)
@@ -477,6 +477,9 @@ function parseHybridAIResponse(responseText, criteria, fileName, photoUrl) {
   console.log(`JSON parsing failed for ${criteria}, using hybrid fallback parsing`);
   return createHybridFallbackResponse(fileName, photoUrl, criteria, responseText);
 }
+
+// Export parser for testing
+exports.parseEnhancedAIResponse = parseHybridAIResponse;
 
 // Helper function for categorization inference
 function inferCategorization(tags, strengths) {
