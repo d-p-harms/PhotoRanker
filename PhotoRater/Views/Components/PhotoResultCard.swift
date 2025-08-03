@@ -78,35 +78,6 @@ struct PhotoResultCard: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // IMPROVED DETAILS BUTTON - Much more prominent and reliable
-                Button(action: {
-                    showingDetailView = true
-                }) {
-                    HStack {
-                        Image(systemName: "info.circle.fill")
-                            .font(.subheadline)
-                        Text("View Detailed Analysis")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.blue.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                }
-                .buttonStyle(PlainButtonStyle()) // Ensures reliable tapping
-
                 // Display that the photo has been saved automatically
                 HStack {
                     Image(systemName: "tray.and.arrow.down.fill")
@@ -127,6 +98,37 @@ struct PhotoResultCard: View {
                                 .stroke(Color.green.opacity(0.3), lineWidth: 1)
                         )
                 )
+
+                // Details button placed at bottom for clearer tap target
+                Button(action: {
+                    showingDetailView = true
+                }) {
+                    HStack {
+                        Image(systemName: "info.circle.fill")
+                            .font(.subheadline)
+                        Text("View Detailed Analysis")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(PlainButtonStyle()) // Ensures reliable tapping
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
