@@ -2,9 +2,9 @@ import SwiftUI
 
 struct PhotoResultCard: View {
     let rankedPhoto: RankedPhoto
+    let onViewDetails: () -> Void
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
-    @State private var showingDetailView = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -79,9 +79,7 @@ struct PhotoResultCard: View {
                 }
                 
                 // IMPROVED DETAILS BUTTON - Much more prominent and reliable
-                Button(action: {
-                    showingDetailView = true
-                }) {
+                Button(action: onViewDetails) {
                     HStack {
                         Image(systemName: "info.circle.fill")
                             .font(.subheadline)
@@ -115,9 +113,6 @@ struct PhotoResultCard: View {
         .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
         .onAppear {
             loadImageFromURL()
-        }
-        .sheet(isPresented: $showingDetailView) {
-            PhotoDetailView(rankedPhoto: rankedPhoto)
         }
     }
     
