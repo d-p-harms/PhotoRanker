@@ -69,8 +69,8 @@ async function performSafetyCheck(imageBuffer) {
       spoof: safe.spoof
     });
 
-    // Block explicit adult content (but allow suggestive)
-    if (['LIKELY', 'VERY_LIKELY'].includes(safe.adult)) {
+    // Block only highly explicit adult content
+    if (['VERY_LIKELY'].includes(safe.adult)) {
       console.warn('SafeSearch blocked - explicit adult content:', safe.adult);
       return false;
     }
