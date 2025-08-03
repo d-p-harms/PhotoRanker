@@ -6,9 +6,9 @@ struct ProfileDetailView: View {
 
     var body: some View {
         if let index = gallery.profiles.firstIndex(where: { $0.id == profile.id }) {
-            let binding = $gallery.profiles[index]
+            let currentProfile = gallery.profiles[index]
             List {
-                ForEach(binding.photos) { photo in
+                ForEach(currentProfile.photos) { photo in
                     HStack {
                         if let image = photo.localImage {
                             Image(uiImage: image)
@@ -26,10 +26,10 @@ struct ProfileDetailView: View {
                     }
                 }
                 .onMove { offsets, dest in
-                    gallery.movePhoto(at: offsets, to: dest, in: binding.wrappedValue)
+                    gallery.movePhoto(at: offsets, to: dest, in: currentProfile)
                 }
             }
-            .navigationTitle(binding.wrappedValue.name)
+            .navigationTitle(currentProfile.name)
             .toolbar { EditButton() }
         } else {
             Text("Profile not found")
