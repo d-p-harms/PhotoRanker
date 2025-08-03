@@ -4,11 +4,13 @@ import Foundation
 import Firebase
 import FirebaseFunctions
 import FirebaseAuth
+import FirebaseStorage
 import ImageIO
 
 class PhotoProcessor: ObservableObject {
     static let shared = PhotoProcessor()
     private let functions = Functions.functions()
+    private let storage = Storage.storage()
     
     // BALANCED: Keep quality settings, add security limits
     private let optimalAISize: CGFloat = 1536
@@ -122,7 +124,95 @@ class PhotoProcessor: ObservableObject {
         
         return true
     }
-    
+
+    // Upload images in small batches to avoid memory pressure
+    private func uploadImages(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
+        // Process images in smaller batches to prevent memory issues
+        let batchSize = 3
+        var uploadedUrls: [String] = []
+        var currentIndex = 0
+
+        func processBatch() {
+            let endIndex = min(currentIndex + batchSize, images.count)
+            let batch = Array(images[currentIndex..<endIndex])
+
+            processBatchImages(batch) { result in
+                switch result {
+                case .success(let urls):
+                    uploadedUrls.append(contentsOf: urls)
+                    currentIndex = endIndex
+
+                    if currentIndex >= images.count {
+                        completion(.success(uploadedUrls))
+                    } else {
+                        // Add delay to prevent overwhelming Firebase
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            processBatch()
+                        }
+                    }
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+        }
+
+        processBatch()
+    }
+
+    private func processBatchImages(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            let error = NSError(domain: "PhotoProcessor", code: 401,
+                               userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+            completion(.failure(error))
+            return
+        }
+
+        let dispatchGroup = DispatchGroup()
+        var uploadedUrls: [String] = []
+        var uploadError: Error?
+
+        for (index, image) in images.enumerated() {
+            dispatchGroup.enter()
+
+            guard let optimizedData = optimizeImageForAI(image) else {
+                uploadError = NSError(domain: "PhotoProcessor", code: 1,
+                                      userInfo: [NSLocalizedDescriptionKey: "Failed to optimize image \(index + 1)"])
+                dispatchGroup.leave()
+                continue
+            }
+
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let randomId = UUID().uuidString.prefix(8)
+            let fileName = "ai-analysis/\(userId)/\(timestamp)_\(randomId)_\(index).jpg"
+            let ref = storage.reference().child(fileName)
+
+            ref.putData(optimizedData, metadata: nil) { _, error in
+                if let error = error {
+                    uploadError = error
+                    dispatchGroup.leave()
+                    return
+                }
+
+                ref.downloadURL { url, error in
+                    if let error = error {
+                        uploadError = error
+                    } else if let url = url {
+                        uploadedUrls.append(url.absoluteString)
+                    }
+                    dispatchGroup.leave()
+                }
+            }
+        }
+
+        dispatchGroup.notify(queue: DispatchQueue.main) {
+            if let error = uploadError {
+                completion(.failure(error))
+            } else {
+                completion(.success(uploadedUrls))
+            }
+        }
+    }
+
     private func processInBatches(photoData: [String], criteria: RankingCriteria, originalImages: [UIImage], completion: @escaping (Result<[RankedPhoto], Error>) -> Void) {
         
         // Split into batches if needed
