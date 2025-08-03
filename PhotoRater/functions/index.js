@@ -55,24 +55,57 @@ async function validateAndPrepareImage(buffer) {
   return processedBuffer;
 }
 
-// CONTENT SAFETY CHECK
+// DATING APP STANDARD CONTENT SAFETY CHECK
 async function performSafetyCheck(imageBuffer) {
   try {
     const [safeResult] = await visionClient.safeSearchDetection(imageBuffer);
     const safe = safeResult.safeSearchAnnotation || {};
-    const flaggedLevels = ['LIKELY', 'VERY_LIKELY'];
-    
-    if (flaggedLevels.includes(safe.adult) || 
-        flaggedLevels.includes(safe.violence) || 
-        flaggedLevels.includes(safe.racy)) {
-      console.warn('SafeSearch blocked image:', safe);
+
+    console.log('SafeSearch results:', {
+      adult: safe.adult,
+      violence: safe.violence,
+      racy: safe.racy,
+      medical: safe.medical,
+      spoof: safe.spoof
+    });
+
+    // Block explicit adult content (but allow suggestive)
+    if (['LIKELY', 'VERY_LIKELY'].includes(safe.adult)) {
+      console.warn('SafeSearch blocked - explicit adult content:', safe.adult);
       return false;
     }
-    
+
+    // Block ALL violence (dating apps are very strict about violence)
+    if (['POSSIBLE', 'LIKELY', 'VERY_LIKELY'].includes(safe.violence)) {
+      console.warn('SafeSearch blocked - violence detected:', safe.violence);
+      return false;
+    }
+
+    // Allow racy content unless explicitly sexual
+    if (['VERY_LIKELY'].includes(safe.racy)) {
+      console.warn('SafeSearch blocked - explicit racy content:', safe.racy);
+      return false;
+    }
+
+    // Block medical content
+    if (['LIKELY', 'VERY_LIKELY'].includes(safe.medical)) {
+      console.warn('SafeSearch blocked - medical content:', safe.medical);
+      return false;
+    }
+
+    // Block fake/manipulated content
+    if (['LIKELY', 'VERY_LIKELY'].includes(safe.spoof)) {
+      console.warn('SafeSearch blocked - spoof/fake content:', safe.spoof);
+      return false;
+    }
+
+    console.log('Image passed dating app content policy');
     return true;
+
   } catch (error) {
-    console.warn('SafeSearch check failed, proceeding with analysis:', error);
-    return true; // Don't block if safety check fails
+    console.error('SafeSearch check failed:', error);
+    // Fail closed – reject images when safety check fails
+    return false;
   }
 }
 
@@ -405,11 +438,11 @@ function parseEnhancedPracticalResponse(responseText, criteria, fileName, photoU
       const result = {  
         fileName: fileName,
         storageURL: photoUrl,
-        score: Math.min(Math.max(parsed.overallScore || parsed.score || 75, 0), 100),
-        visualQuality: Math.min(Math.max(parsed.visualQuality || 75, 0), 100),
-        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore || 75, 0), 100),
-        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore || 75, 0), 100),
-        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness || 75, 0), 100),
+        score: Math.min(Math.max(parsed.overallScore ?? parsed.score ?? 75, 0), 100),
+        visualQuality: Math.min(Math.max(parsed.visualQuality ?? 75, 0), 100),
+        attractivenessScore: Math.min(Math.max(parsed.attractivenessScore ?? 75, 0), 100),
+        datingAppealScore: Math.min(Math.max(parsed.datingAppealScore ?? 75, 0), 100),
+        swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness ?? 75, 0), 100),
         
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         
@@ -472,6 +505,9 @@ function parseEnhancedPracticalResponse(responseText, criteria, fileName, photoU
   console.log(`JSON parsing failed for ${criteria}, using enhanced practical fallback parsing`);
   return createEnhancedPracticalFallback(fileName, photoUrl, criteria, responseText);
 }
+
+// Export for testing compatibility
+exports.parseEnhancedAIResponse = parseEnhancedPracticalResponse;
 
 // INTELLIGENT CATEGORIZATION INFERENCE
 function inferCategorizationFromContent(parsed, responseText) {
