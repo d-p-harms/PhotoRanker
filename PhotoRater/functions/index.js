@@ -103,7 +103,7 @@ exports.analyzePhotos = onCall({
     const genAI = new GoogleGenerativeAI(geminiKey.value());
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    console.log(`Starting enhanced photo analysis with criteria: ${criteria} for ${photos.length} photos`);
+    console.log(`Starting sophisticated photo analysis with criteria: ${criteria} for ${photos.length} photos`);
 
     const concurrencyLimit = 6;
     const batches = [];
@@ -120,7 +120,7 @@ exports.analyzePhotos = onCall({
       const batchPromises = batch.map(async (photoData, index) => {
         try {
           await new Promise(resolve => setTimeout(resolve, index * 200));
-          return await analyzeImageWithGemini(photoData, criteria, model, index);
+          return await analyzeImageWithAdvancedGemini(photoData, criteria, model, index);
         } catch (error) {
           console.error(`Error in batch ${batchIndex + 1}, photo ${index + 1}:`, error);
           return createFallbackResponse(`photo_${index}`, '', criteria, error.message);
@@ -150,7 +150,8 @@ exports.analyzePhotos = onCall({
         batchesProcessed: batches.length,
         averageScore: Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length),
         criteriaUsed: criteria,
-        processingVersion: '3.0.0'
+        processingVersion: '3.1.0',
+        analysisDepth: 'professional'
       }
     };
            
@@ -163,21 +164,21 @@ exports.analyzePhotos = onCall({
   }
 });
 
-// ENHANCED IMAGE ANALYSIS WITH GEMINI
-async function analyzeImageWithGemini(photoData, criteria, model, index) {
-  const timeout = 30000; // 30 second timeout
+// ADVANCED IMAGE ANALYSIS WITH SOPHISTICATED GEMINI PROMPTS
+async function analyzeImageWithAdvancedGemini(photoData, criteria, model, index) {
+  const timeout = 45000; // 45 second timeout for detailed analysis
 
   return Promise.race([
-    performAnalysis(photoData, criteria, model, index),
+    performAdvancedAnalysis(photoData, criteria, model, index),
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Analysis timeout')), timeout)
+      setTimeout(() => reject(new Error('Advanced analysis timeout')), timeout)
     )
   ]);
 }
 
-async function performAnalysis(photoData, criteria, model, index) {
+async function performAdvancedAnalysis(photoData, criteria, model, index) {
   try {
-    console.log(`Processing photo ${index} with criteria: ${criteria}`);
+    console.log(`Processing photo ${index} with sophisticated ${criteria} analysis`);
 
     const buffer = Buffer.from(photoData, 'base64');
 
@@ -192,9 +193,9 @@ async function performAnalysis(photoData, criteria, model, index) {
     }
 
     const base64Image = processedBuffer.toString('base64');
-    const prompt = buildEnhancedCriteriaPrompt(criteria);
+    const prompt = buildSophisticatedAnalysisPrompt(criteria);
 
-    console.log(`Analyzing image with ${criteria} prompt (${prompt.length} chars)`);
+    console.log(`Analyzing image with sophisticated ${criteria} prompt (${prompt.length} chars)`);
 
     let retries = 3;
     while (retries > 0) {
@@ -211,13 +212,14 @@ async function performAnalysis(photoData, criteria, model, index) {
 
         const response = await result.response;
         const text = response.text();
-        console.log(`Raw AI response for ${criteria} (${text.length} chars):`, text.substring(0, 200));
+        console.log(`Raw sophisticated AI response for ${criteria} (${text.length} chars)`);
 
-        const analysisResult = parseEnhancedAIResponse(text, criteria, `photo_${index}`, '');
-        console.log(`Parsed ${criteria} analysis:`, {
+        const analysisResult = parseAdvancedAIResponse(text, criteria, `photo_${index}`, '');
+        console.log(`Parsed sophisticated ${criteria} analysis:`, {
           score: analysisResult.score,
+          detailedScores: analysisResult.detailedScores,
           hasStrengths: analysisResult.strengths?.length > 0,
-          hasImprovements: analysisResult.improvements?.length > 0
+          hasPersonalityInsights: analysisResult.datingInsights?.personalityProjected?.length > 0
         });
 
         return analysisResult;
@@ -226,11 +228,11 @@ async function performAnalysis(photoData, criteria, model, index) {
         if (retries === 0) throw error;
 
         // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+        await new Promise(resolve => setTimeout(resolve, (3 - retries) * 2000));
       }
     }
   } catch (error) {
-    console.error(`Analysis failed for photo ${index}:`, error);
+    console.error(`Advanced analysis failed for photo ${index}:`, error);
 
     if (error.message.includes('too small') || error.message.includes('too large')) {
       return createRejectedResponse(`photo_${index}`, '', error.message);
@@ -240,367 +242,850 @@ async function performAnalysis(photoData, criteria, model, index) {
   }
 }
 
-// ENHANCED CRITERIA-SPECIFIC PROMPTS (From File 1)
-function buildEnhancedCriteriaPrompt(criteria) {
-  const baseInstructions = `You are an expert dating profile consultant. Analyze this photo comprehensively and return detailed JSON analysis.
+// SOPHISTICATED ANALYSIS PROMPTS - PROFESSIONAL DATING CONSULTANT LEVEL
+function buildSophisticatedAnalysisPrompt(criteria) {
+  const sophisticatedBase = `You are a world-class dating profile consultant and image analyst with expertise in psychology, fashion, photography, and social dynamics. Provide an incredibly detailed, nuanced analysis that goes beyond surface-level observations.
 
-ALWAYS return a complete JSON response with all requested fields, even if some fields are empty arrays or null.`;
+ANALYSIS FRAMEWORK:
+1. Technical Excellence: Lighting, composition, angles, image quality
+2. Aesthetic Appeal: Attractiveness factors, styling, visual harmony
+3. Psychological Impact: Personality projection, emotional response, trustworthiness
+4. Dating Strategy: Market positioning, demographic appeal, conversation potential
+5. Social Dynamics: Confidence indicators, approachability, social proof
+
+RETURN VALID JSON WITH COMPREHENSIVE DATA - NO TEXT OUTSIDE JSON.`;
 
   switch (criteria) {
-    case 'profile_order':
-      return `${baseInstructions}
+    case 'best':
+      return `${sophisticatedBase}
 
-ANALYZE FOR OPTIMAL PROFILE POSITION:
+COMPREHENSIVE EXCELLENCE ANALYSIS:
 
-Evaluate this photo for:
-1. Main photo suitability (clear face, good lighting, simple background)
-2. Supporting photo value (adds variety, shows different aspects)
-3. Position recommendation (1-6 or 'skip' if not suitable)
+Analyze this photo across ALL dimensions of dating profile success:
 
-Consider:
-- Face clarity and visibility
-- Background complexity
-- Photo quality and appeal
-- How it complements other photos in a profile sequence
+TECHNICAL ASSESSMENT:
+- Lighting quality and direction (natural vs artificial, shadows, highlights)
+- Composition and framing (rule of thirds, background, focus)
+- Image quality (sharpness, resolution, editing quality)
+- Angle and perspective (most flattering angles, camera height)
 
-RETURN THIS EXACT JSON FORMAT:
+ATTRACTIVENESS EVALUATION:
+- Facial features and expression analysis
+- Body language and posture assessment
+- Styling and fashion choices
+- Overall visual appeal and aesthetic harmony
+
+DATING MARKET ANALYSIS:
+- Mass market appeal vs niche attractiveness
+- Target demographic analysis
+- Competitive advantage in dating apps
+- First impression impact
+
+PSYCHOLOGICAL PROFILING:
+- Personality traits projected through image
+- Emotional intelligence indicators
+- Confidence and authenticity levels
+- Approachability and warmth factors
+
+STRATEGIC POSITIONING:
+- Primary vs secondary photo suitability
+- Profile role and positioning strategy
+- Conversation starter potential
+- Long-term relationship vs casual appeal
+
 {
-  "score": (0-100, positioning value),
-  "position": "1" | "2" | "3" | "4" | "5" | "6" | "skip",
-  "positionReason": "detailed explanation of why this position is recommended",
-  "faceClarity": (0-100),
-  "backgroundComplexity": (0-100, lower is better),
-  "positioningAdvice": "specific advice for optimal positioning",
+  "score": (0-100, overall excellence rating),
+  "detailedScores": {
+    "technicalQuality": (0-100),
+    "visualAppeal": (0-100),
+    "attractiveness": (0-100),
+    "personalityProjection": (0-100),
+    "datingMarketValue": (0-100),
+    "conversationPotential": (0-100),
+    "authenticityLevel": (0-100),
+    "approachabilityFactor": (0-100)
+  },
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "professional", "casual"],
-  "strengths": ["specific strength 1", "specific strength 2"],
-  "improvements": ["specific improvement 1", "specific improvement 2"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
+  "tags": ["multiple", "relevant", "descriptive", "tags"],
+  "strengths": [
+    "specific technical strength with details",
+    "attractiveness factor with explanation",
+    "personality trait clearly visible",
+    "strategic advantage for dating",
+    "unique appeal factor"
+  ],
+  "improvements": [
+    "specific technical improvement with steps",
+    "styling enhancement with details",
+    "angle or pose adjustment suggestion",
+    "background or setting improvement",
+    "overall strategy enhancement"
+  ],
+  "bestQuality": "the single most compelling aspect of this photo",
+  "suggestions": [
+    "immediate actionable improvement",
+    "medium-term strategy suggestion",
+    "long-term profile development advice"
+  ],
+  "nextPhotoSuggestions": [
+    "specific complementary photo type needed",
+    "activity or setting recommendation",
+    "style or mood variation suggested"
+  ],
   "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
+    "lighting": "detailed lighting analysis and improvement suggestions",
+    "composition": "composition strengths/weaknesses and specific improvements",
+    "styling": "outfit, grooming, and accessory feedback with alternatives",
+    "editing": "post-processing observations and suggestions",
+    "equipment": "camera angle, distance, and technical recommendations"
   },
   "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "strategic positioning role"
+    "personalityProjected": [
+      "confident", "approachable", "intelligent", "creative", "adventurous"
+    ],
+    "emotionalIntelligence": "assessment of EQ indicators in photo",
+    "demographicAppeal": "primary target demographic analysis",
+    "marketPositioning": "dating market positioning strategy",
+    "relationshipType": "casual vs serious relationship appeal",
+    "conversationStarters": [
+      "specific element someone could ask about",
+      "interesting background detail to discuss",
+      "hobby or interest visible in photo"
+    ],
+    "psychologicalImpact": "deeper analysis of psychological response this photo evokes",
+    "profileRole": "strategic role this photo should play in dating profile"
+  },
+  "competitiveAnalysis": {
+    "uniqueSellingPoints": ["what sets this photo apart from typical dating photos"],
+    "marketAdvantages": ["strengths in competitive dating environment"],
+    "differentiationFactors": ["elements that make you memorable"]
+  },
+  "improvementStrategy": {
+    "immediateChanges": ["quick fixes for next photo session"],
+    "mediumTermGoals": ["style or presentation improvements to work on"],
+    "longTermStrategy": ["overall dating profile and personal brand development"]
+  }
+}`;
+
+    case 'profile_order':
+      return `${sophisticatedBase}
+
+STRATEGIC PROFILE POSITIONING ANALYSIS:
+
+Analyze optimal positioning in dating profile sequence (photos 1-6):
+
+MAIN PHOTO CRITERIA (Position 1):
+- Face visibility and clarity (70%+ of frame)
+- Immediate attractiveness and appeal
+- Simple, non-distracting background
+- Confident, approachable expression
+- High technical quality
+
+SUPPORTING PHOTO ANALYSIS (Positions 2-6):
+- Complementary value to main photo
+- Variety and personality demonstration
+- Social proof and lifestyle indicators
+- Activity and interest showcases
+- Full-body and different angle options
+
+SEQUENCING STRATEGY:
+- Profile flow and narrative development
+- Psychological impact progression
+- Conversation starter distribution
+- Appeal to different user preferences
+
+{
+  "score": (0-100, positioning effectiveness),
+  "position": "1" | "2" | "3" | "4" | "5" | "6" | "skip",
+  "positionReason": "detailed strategic explanation for recommended position",
+  "mainPhotoSuitability": (0-100),
+  "supportingPhotoValue": (0-100),
+  "faceClarity": (0-100),
+  "backgroundComplexity": (0-100, lower is better),
+  "immediateImpact": (0-100),
+  "complementaryValue": (0-100),
+  "positioningAdvice": "specific strategic positioning guidance",
+  "visualQuality": (0-100),
+  "attractivenessScore": (0-100),
+  "datingAppealScore": (0-100),
+  "swipeWorthiness": (0-100),
+  "tags": ["main_photo", "supporting", "social_proof", "activity", "personality"],
+  "strengths": [
+    "positioning strength with explanation",
+    "profile sequence advantage",
+    "unique positioning value"
+  ],
+  "improvements": [
+    "positioning strategy enhancement",
+    "profile flow improvement",
+    "sequencing optimization"
+  ],
+  "nextPhotoSuggestions": [
+    "specific photo type needed to complement this one",
+    "gap in profile narrative to fill",
+    "variety enhancement recommendation"
+  ],
+  "technicalFeedback": {
+    "lighting": "lighting assessment for profile positioning",
+    "composition": "composition effectiveness for chosen position",
+    "styling": "styling appropriateness for position"
+  },
+  "datingInsights": {
+    "personalityProjected": ["traits shown in this positioning context"],
+    "profileRole": "specific strategic role in profile sequence",
+    "narrativeContribution": "how this photo advances your dating story"
+  },
+  "positioningStrategy": {
+    "primaryAppeal": "main attraction factor for this position",
+    "targetTiming": "when in profile viewing this photo impacts most",
+    "psychologicalImpact": "mental impression created at this position",
+    "competitiveAdvantage": "positioning advantage over typical profiles"
   }
 }`;
 
     case 'conversation_starters':
-      return `${baseInstructions}
+      return `${sophisticatedBase}
 
-ANALYZE FOR CONVERSATION POTENTIAL:
+CONVERSATION CATALYST ANALYSIS:
 
-Identify elements that give people something specific to message about:
-- Unique backgrounds or locations
-- Visible activities, hobbies, interests
-- Pets, travel elements, unusual objects
-- Anything that invites questions or comments
+Evaluate conversation-generating potential and message hooks:
 
-Rate conversation potential (0-100) and identify specific talking points.
+CONVERSATION ELEMENTS IDENTIFICATION:
+- Unique background locations and settings
+- Visible activities, hobbies, and interests
+- Travel destinations and cultural elements
+- Pets, objects, and personal items
+- Professional or creative indicators
+- Unusual or intriguing details
 
-RETURN THIS EXACT JSON FORMAT:
+MESSAGE HOOK ANALYSIS:
+- Easy conversation openers
+- Question-generating elements
+- Shared interest potential
+- Story-telling opportunities
+- Compliment-worthy aspects
+
+ENGAGEMENT STRATEGY:
+- Immediate conversation starters
+- Deeper conversation development
+- Personality reveal opportunities
+- Connection building elements
+
 {
-  "score": (0-100, conversation starter value),
-  "conversationElements": ["element 1", "element 2", "element 3"],
-  "messageHooks": ["what someone could ask about 1", "what someone could ask about 2"],
-  "conversationAdvice": "how to leverage this photo for conversations",
+  "score": (0-100, conversation generation potential),
+  "conversationElements": [
+    "specific visible element with conversation potential",
+    "background detail that invites questions",
+    "activity or hobby clearly shown",
+    "travel or location indicator",
+    "interesting object or accessory"
+  ],
+  "messageHooks": [
+    "natural conversation opener someone could use",
+    "question this photo naturally invites",
+    "compliment opportunity this photo provides",
+    "shared experience connection point",
+    "story or experience inquiry hook"
+  ],
+  "conversationAdvice": "strategic guidance for leveraging this photo in conversations",
+  "engagementPotential": (0-100),
+  "questionGenerationScore": (0-100),
+  "relatabilityFactor": (0-100),
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "travel", "hobby"],
-  "strengths": ["conversation strength 1", "conversation strength 2"],
-  "improvements": ["how to add more conversation elements"],
-  "nextPhotoSuggestions": ["complementary photo idea 1", "complementary photo idea 2"],
+  "tags": ["conversation", "engaging", "interesting", "relatable", "discussion"],
+  "strengths": [
+    "specific conversation strength with example",
+    "engagement factor that works well",
+    "relatable element that connects"
+  ],
+  "improvements": [
+    "how to add more conversation elements",
+    "enhancement for better engagement",
+    "strategy for increased relatability"
+  ],
+  "nextPhotoSuggestions": [
+    "complementary photo type for conversation variety",
+    "activity photo to add discussion points",
+    "setting that creates different conversation opportunities"
+  ],
   "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
+    "lighting": "lighting impact on conversation element visibility",
+    "composition": "composition effectiveness for highlighting interesting elements",
+    "styling": "styling choices that add conversation value"
   },
   "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "conversation starter role"
+    "personalityProjected": ["traits revealed through conversation elements"],
+    "profileRole": "conversation starter specialist role",
+    "connectionFactors": ["elements that help build rapport"]
+  },
+  "conversationStrategy": {
+    "immediateOpeners": ["first message possibilities this photo creates"],
+    "conversationDevelopment": ["how conversations could naturally evolve"],
+    "personalityReveal": ["aspects of personality this photo helps reveal"],
+    "connectionBuilding": ["how this photo facilitates deeper connection"]
   }
 }`;
 
     case 'broad_appeal':
-      return `${baseInstructions}
+      return `${sophisticatedBase}
 
-ANALYZE DEMOGRAPHIC APPEAL:
+DEMOGRAPHIC APPEAL ANALYSIS:
 
-Evaluate:
-- Mass market appeal vs niche attraction
-- Which demographics this appeals to most
-- Trade-offs between broad appeal and attracting ideal matches
+Evaluate appeal across different demographics and market segments:
 
-RETURN THIS EXACT JSON FORMAT:
+MASS MARKET ANALYSIS:
+- Universal attractiveness factors
+- Cross-demographic appeal elements
+- Cultural and social accessibility
+- Age range appeal assessment
+- Geographic and lifestyle compatibility
+
+NICHE VS BROAD APPEAL:
+- Specific demographic targeting
+- Unique attraction factors
+- Trade-offs between broad and targeted appeal
+- Market positioning implications
+
+TARGET DEMOGRAPHIC EVALUATION:
+- Primary demographic attraction
+- Secondary market appeal
+- Lifestyle and value alignment
+- Professional and social compatibility
+
 {
-  "score": (0-100, broad appeal rating),
+  "score": (0-100, broad demographic appeal),
   "appealBreadth": "broad" | "moderate" | "niche",
-  "targetDemographics": ["demographic 1", "demographic 2"],
-  "appealStrategy": "strategic advice for using this photo",
+  "massMarketScore": (0-100),
+  "nicheAppealScore": (0-100),
+  "universalFactors": (0-100),
+  "targetDemographics": [
+    "primary demographic with details",
+    "secondary demographic appeal",
+    "tertiary market segment"
+  ],
+  "appealStrategy": "strategic advice for optimizing demographic appeal",
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["broad_appeal", "niche", "professional", "casual"],
-  "strengths": ["appeal strength 1", "appeal strength 2"],
-  "improvements": ["how to broaden appeal", "how to target better"],
-  "nextPhotoSuggestions": ["complementary photo idea 1", "complementary photo idea 2"],
+  "tags": ["broad_appeal", "universal", "accessible", "mainstream", "diverse"],
+  "strengths": [
+    "universal appeal factor with explanation",
+    "cross-demographic strength",
+    "mass market advantage"
+  ],
+  "improvements": [
+    "how to broaden appeal without losing authenticity",
+    "demographic expansion strategy",
+    "market positioning enhancement"
+  ],
+  "nextPhotoSuggestions": [
+    "photo type to appeal to different demographics",
+    "setting or activity for broader appeal",
+    "style variation for market expansion"
+  ],
   "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
+    "lighting": "lighting choices impact on broad appeal",
+    "composition": "composition effectiveness across demographics",
+    "styling": "styling choices for maximum appeal breadth"
   },
   "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "demographicAppeal": "who this attracts most",
-    "profileRole": "how to use strategically"
+    "personalityProjected": ["universally appealing personality traits"],
+    "demographicAppeal": "detailed breakdown of who this attracts most",
+    "profileRole": "strategic positioning for broad market appeal"
+  },
+  "marketAnalysis": {
+    "competitiveAdvantages": ["advantages in broad dating market"],
+    "appealOptimization": ["strategies for maintaining broad appeal"],
+    "demographicBalance": ["how to balance broad vs targeted appeal"],
+    "marketPositioning": ["optimal positioning strategy for maximum reach"]
   }
 }`;
 
     case 'authenticity':
-      return `${baseInstructions}
+      return `${sophisticatedBase}
 
-ANALYZE AUTHENTICITY AND NATURALNESS:
+AUTHENTICITY AND NATURALNESS ANALYSIS:
 
-Focus on:
-- How genuine vs posed the photo appears
-- Natural expressions and body language
-- Candid vs staged feeling
-- Authentic personality showing through
+Evaluate genuine personality expression and natural appeal:
 
-RETURN THIS EXACT JSON FORMAT:
+AUTHENTICITY INDICATORS:
+- Natural vs posed expression analysis
+- Genuine emotion and body language
+- Spontaneous vs staged appearance
+- Personality authenticity assessment
+- Comfortable vs forced presentation
+
+NATURALNESS EVALUATION:
+- Candid moment capture quality
+- Relaxed and comfortable appearance
+- Genuine smile and expression
+- Natural posture and positioning
+- Unforced styling and presentation
+
+PERSONALITY REVELATION:
+- True character showing through
+- Authentic interest and passion display
+- Natural confidence indicators
+- Genuine warmth and approachability
+- Real lifestyle representation
+
 {
-  "score": (0-100, authenticity rating),
-  "authenticityLevel": "natural" | "somewhat_posed" | "clearly_posed",
-  "genuinenessFactors": "what makes this feel genuine or not",
-  "authenticityAdvice": "how to appear more authentic",
-  "personalityTraits": ["authentic trait 1", "authentic trait 2"],
+  "score": (0-100, overall authenticity rating),
+  "authenticityLevel": "completely_natural" | "mostly_natural" | "somewhat_posed" | "clearly_staged",
+  "naturalness": (0-100),
+  "genuineness": (0-100),
+  "spontaneityLevel": (0-100),
+  "comfortLevel": (0-100),
+  "genuinenessFactors": "detailed analysis of what makes this feel genuine or not",
+  "authenticityAdvice": "specific guidance for appearing more authentic",
+  "personalityTraits": [
+    "authentic personality trait clearly visible",
+    "genuine character aspect shown",
+    "natural behavioral indicator",
+    "honest self-expression element"
+  ],
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["authentic", "natural", "genuine", "personality"],
-  "strengths": ["authenticity strength 1", "authenticity strength 2"],
-  "improvements": ["how to be more natural", "how to show genuine personality"],
-  "nextPhotoSuggestions": ["complementary authentic photo idea 1", "complementary authentic photo idea 2"],
+  "tags": ["authentic", "natural", "genuine", "real", "unposed"],
+  "strengths": [
+    "specific authenticity strength with evidence",
+    "natural appeal factor",
+    "genuine personality trait visible"
+  ],
+  "improvements": [
+    "how to enhance natural expression",
+    "authenticity improvement strategy",
+    "natural confidence building approach"
+  ],
+  "nextPhotoSuggestions": [
+    "setting for more natural expression",
+    "activity that reveals authentic personality",
+    "context for genuine self-expression"
+  ],
   "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
+    "lighting": "lighting contribution to natural appearance",
+    "composition": "composition impact on authenticity perception",
+    "styling": "styling authenticity and natural fit"
   },
   "datingInsights": {
-    "personalityProjected": ["genuine trait 1", "genuine trait 2"],
-    "profileRole": "how authentic photos should be used"
+    "personalityProjected": ["authentic personality traits clearly visible"],
+    "profileRole": "authenticity anchor for dating profile",
+    "connectionPotential": "how authenticity facilitates genuine connections"
+  },
+  "authenticityAnalysis": {
+    "genuineElements": ["specific elements that feel completely authentic"],
+    "naturalAdvantages": ["benefits of authentic presentation"],
+    "trustworthiness": ["factors that build trust through authenticity"],
+    "realPersonality": ["aspects of real personality successfully conveyed"]
   }
 }`;
 
     case 'balanced':
-      return `${baseInstructions}
+      return `${sophisticatedBase}
 
-ANALYZE FOR PROFILE VARIETY:
+PROFILE BALANCE AND VARIETY ANALYSIS:
 
-Determine photo type and categorize for balanced profile creation:
-- Social context (with others, social settings)
-- Activity/hobby content (sports, interests, activities)
-- Personality expression (character, emotions, traits)
+Analyze photo categorization for balanced profile creation:
 
-RETURN THIS EXACT JSON FORMAT:
+PHOTO TYPE CLASSIFICATION:
+- Social context and proof indicators
+- Activity and hobby demonstration
+- Personality and character expression
+- Professional and lifestyle elements
+- Physical and aesthetic components
+
+BALANCE CONTRIBUTION:
+- Profile variety enhancement
+- Narrative development support
+- Multi-dimensional personality show
+- Different context representation
+- Comprehensive self-presentation
+
+STRATEGIC ROLE ASSESSMENT:
+- Primary profile function
+- Supporting narrative element
+- Variety and diversity contribution
+- Target audience expansion
+- Complete picture development
+
 {
-  "score": (0-100, overall quality),
+  "score": (0-100, overall contribution to balanced profile),
+  "profileBalanceScore": (0-100),
+  "varietyContribution": (0-100),
+  "narrativeDevelopment": (0-100),
   "isSocial": true | false,
   "isActivity": true | false,
   "isPersonality": true | false,
-  "profileRole": "main photo" | "social proof" | "activity showcase" | "personality highlight",
+  "isProfessional": true | false,
+  "isLifestyle": true | false,
+  "profileRole": "primary_attraction" | "social_proof" | "activity_showcase" | "personality_highlight" | "lifestyle_indicator" | "professional_display",
+  "balanceAnalysis": "detailed analysis of how this photo contributes to profile balance",
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality"],
-  "strengths": ["what works well", "balance strength"],
-  "improvements": ["enhancement suggestion", "balance improvement"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
+  "tags": ["balanced", "variety", "comprehensive", "multi-dimensional"],
+  "strengths": [
+    "specific balance contribution strength",
+    "variety enhancement factor",
+    "narrative development advantage"
+  ],
+  "improvements": [
+    "balance optimization suggestion",
+    "variety enhancement opportunity",
+    "profile completion recommendation"
+  ],
+  "nextPhotoSuggestions": [
+    "complementary photo type for better balance",
+    "missing profile element to address",
+    "variety enhancement opportunity"
+  ],
   "technicalFeedback": {
-    "lighting": "lighting assessment",
-    "composition": "composition feedback",
-    "styling": "styling advice"
+    "lighting": "lighting appropriateness for photo type",
+    "composition": "composition effectiveness for intended role",
+    "styling": "styling fit for profile category"
   },
   "datingInsights": {
-    "personalityProjected": ["trait1", "trait2"],
-    "profileRole": "strategic role in balanced profile"
+    "personalityProjected": ["traits shown in this context"],
+    "profileRole": "specific strategic role in balanced profile presentation",
+    "narrativeContribution": "how this photo advances complete self-presentation"
+  },
+  "balanceStrategy": {
+    "profileCompleteness": ["what this photo adds to complete picture"],
+    "varietyOptimization": ["how to use this for maximum profile variety"],
+    "narrativeCoherence": ["how this fits into overall dating narrative"],
+    "targetAudienceExpansion": ["demographics this photo helps reach"]
   }
 }`;
 
-    default: // 'best' and fallback
-      return `${baseInstructions}
+    default:
+      return `${sophisticatedBase}
 
-COMPREHENSIVE PHOTO ANALYSIS:
+COMPREHENSIVE PROFESSIONAL DATING ANALYSIS:
 
-Analyze for overall dating profile excellence:
-- Visual quality (technical aspects, composition, lighting)
-- Attractiveness factors (appearance, styling, appeal)
-- Dating potential (swipe-worthiness, conversation potential)
-- Overall impression and impact
+Conduct the most thorough analysis possible across all dimensions:
 
-RETURN THIS EXACT JSON FORMAT:
 {
   "score": (0-100, overall excellence),
+  "detailedScores": {
+    "technicalQuality": (0-100),
+    "visualAppeal": (0-100),
+    "attractiveness": (0-100),
+    "personalityProjection": (0-100),
+    "datingMarketValue": (0-100),
+    "conversationPotential": (0-100),
+    "authenticityLevel": (0-100),
+    "approachabilityFactor": (0-100)
+  },
   "visualQuality": (0-100),
   "attractivenessScore": (0-100),
   "datingAppealScore": (0-100),
   "swipeWorthiness": (0-100),
-  "tags": ["social", "activity", "personality", "professional", "casual"],
-  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
-  "improvements": ["actionable improvement 1", "actionable improvement 2"],
-  "bestQuality": "what makes this photo excellent",
-  "suggestions": ["enhancement suggestion 1", "enhancement suggestion 2"],
-  "nextPhotoSuggestions": ["complementary photo type 1", "complementary photo type 2"],
+  "tags": ["comprehensive", "professional", "detailed", "strategic"],
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "bestQuality": "the most compelling aspect",
+  "suggestions": ["suggestion 1", "suggestion 2"],
+  "nextPhotoSuggestions": ["complementary photo 1", "complementary photo 2"],
   "technicalFeedback": {
-    "lighting": "detailed lighting assessment",
-    "composition": "composition analysis and improvements",
-    "styling": "outfit, grooming, accessory feedback"
+    "lighting": "detailed analysis",
+    "composition": "comprehensive feedback",
+    "styling": "complete assessment"
   },
   "datingInsights": {
     "personalityProjected": ["trait1", "trait2", "trait3"],
-    "demographicAppeal": "who this photo appeals to most",
-    "profileRole": "how this should be used strategically"
+    "demographicAppeal": "target demographic",
+    "profileRole": "strategic role"
   }
 }`;
   }
 }
 
-// ENHANCED RESPONSE PARSING (From File 1)
-function parseEnhancedAIResponse(responseText, criteria, fileName, photoUrl) {
+// ADVANCED AI RESPONSE PARSING
+function parseAdvancedAIResponse(responseText, criteria, fileName, photoUrl) {
   try {
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    // More sophisticated JSON extraction
+    let jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    
+    // Try multiple JSON extraction methods
+    if (!jsonMatch) {
+      const lines = responseText.split('\n');
+      const jsonLines = lines.filter(line => line.trim().startsWith('{') || line.includes('"score"'));
+      if (jsonLines.length > 0) {
+        jsonMatch = [jsonLines.join('\n')];
+      }
+    }
+    
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      console.log(`Successfully parsed JSON for ${criteria}:`, Object.keys(parsed));
+      console.log(`Successfully parsed sophisticated JSON for ${criteria}:`, Object.keys(parsed));
       
+      // Enhanced response structure with all sophisticated features
       return {
         fileName: fileName,
         storageURL: photoUrl,
         score: Math.min(Math.max(parsed.score ?? 75, 0), 100),
+        
+        // Detailed scoring system
+        detailedScores: parsed.detailedScores || {
+          technicalQuality: parsed.technicalQuality ?? parsed.visualQuality ?? parsed.score ?? 75,
+          visualAppeal: parsed.visualAppeal ?? parsed.attractivenessScore ?? parsed.score ?? 75,
+          attractiveness: parsed.attractiveness ?? parsed.attractivenessScore ?? parsed.score ?? 75,
+          personalityProjection: parsed.personalityProjection ?? parsed.score ?? 75,
+          datingMarketValue: parsed.datingMarketValue ?? parsed.datingAppealScore ?? parsed.score ?? 75,
+          conversationPotential: parsed.conversationPotential ?? parsed.engagementPotential ?? parsed.score ?? 75,
+          authenticityLevel: parsed.authenticityLevel ?? parsed.naturalness ?? parsed.score ?? 75,
+          approachabilityFactor: parsed.approachabilityFactor ?? parsed.score ?? 75
+        },
+        
+        // Standard scores
         visualQuality: Math.min(Math.max(parsed.visualQuality ?? parsed.score ?? 75, 0), 100),
         attractivenessScore: Math.min(Math.max(parsed.attractivenessScore ?? parsed.score ?? 75, 0), 100),
         datingAppealScore: Math.min(Math.max(parsed.datingAppealScore ?? parsed.score ?? 75, 0), 100),
         swipeWorthiness: Math.min(Math.max(parsed.swipeWorthiness ?? parsed.score ?? 75, 0), 100),
         
-        // Basic fields
+        // Enhanced content fields
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-        bestQuality: parsed.bestQuality || (Array.isArray(parsed.strengths) && parsed.strengths.length > 0 ? parsed.strengths[0] : "Good photo quality"),
-        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : (Array.isArray(parsed.improvements) ? parsed.improvements : ["Keep up the great work!"]),
+        bestQuality: parsed.bestQuality || (Array.isArray(parsed.strengths) && parsed.strengths.length > 0 ? parsed.strengths[0] : "High quality photo"),
+        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : (Array.isArray(parsed.improvements) ? parsed.improvements : ["Excellent photo quality"]),
         
-        // Enhanced feedback
+        // Comprehensive feedback arrays
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : (Array.isArray(parsed.suggestions) ? parsed.suggestions : []),
+        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
         nextPhotoSuggestions: Array.isArray(parsed.nextPhotoSuggestions) ? parsed.nextPhotoSuggestions : [],
         
-        // Technical feedback
+        // Enhanced technical feedback
         technicalFeedback: parsed.technicalFeedback || {},
         
-        // Dating insights
-        datingInsights: parsed.datingInsights || {
-          personalityProjected: parsed.personalityProjected || parsed.personalityTraits || [],
-          demographicAppeal: parsed.demographicAppeal,
-          profileRole: parsed.profileRole
+        // Sophisticated dating insights
+        datingInsights: {
+          personalityProjected: parsed.datingInsights?.personalityProjected || parsed.personalityTraits || [],
+          emotionalIntelligence: parsed.datingInsights?.emotionalIntelligence,
+          demographicAppeal: parsed.datingInsights?.demographicAppeal || parsed.demographicAppeal,
+          marketPositioning: parsed.datingInsights?.marketPositioning,
+          relationshipType: parsed.datingInsights?.relationshipType,
+          conversationStarters: parsed.datingInsights?.conversationStarters || parsed.conversationElements || [],
+          psychologicalImpact: parsed.datingInsights?.psychologicalImpact,
+          profileRole: parsed.datingInsights?.profileRole || parsed.profileRole
         },
         
-        // Criteria-specific fields
+        // Advanced analysis fields
+        competitiveAnalysis: parsed.competitiveAnalysis,
+        improvementStrategy: parsed.improvementStrategy,
+        positioningStrategy: parsed.positioningStrategy,
+        conversationStrategy: parsed.conversationStrategy,
+        marketAnalysis: parsed.marketAnalysis,
+        authenticityAnalysis: parsed.authenticityAnalysis,
+        balanceStrategy: parsed.balanceStrategy,
+        
+        // Criteria-specific fields (preserved from original)
         position: parsed.position,
         positionReason: parsed.positionReason,
         faceClarity: parsed.faceClarity,
         backgroundComplexity: parsed.backgroundComplexity,
         positioningAdvice: parsed.positioningAdvice,
+        mainPhotoSuitability: parsed.mainPhotoSuitability,
+        supportingPhotoValue: parsed.supportingPhotoValue,
+        immediateImpact: parsed.immediateImpact,
+        complementaryValue: parsed.complementaryValue,
         
         conversationElements: parsed.conversationElements,
         messageHooks: parsed.messageHooks,
         conversationAdvice: parsed.conversationAdvice,
+        engagementPotential: parsed.engagementPotential,
+        questionGenerationScore: parsed.questionGenerationScore,
+        relatabilityFactor: parsed.relatabilityFactor,
         
         appealBreadth: parsed.appealBreadth,
         targetDemographics: parsed.targetDemographics,
         appealStrategy: parsed.appealStrategy,
+        massMarketScore: parsed.massMarketScore,
+        nicheAppealScore: parsed.nicheAppealScore,
+        universalFactors: parsed.universalFactors,
         
         authenticityLevel: parsed.authenticityLevel,
         genuinenessFactors: parsed.genuinenessFactors,
         authenticityAdvice: parsed.authenticityAdvice,
+        naturalness: parsed.naturalness,
+        genuineness: parsed.genuineness,
+        spontaneityLevel: parsed.spontaneityLevel,
+        comfortLevel: parsed.comfortLevel,
         personalityTraits: parsed.personalityTraits,
         
         isSocial: parsed.isSocial,
         isActivity: parsed.isActivity,
-        isPersonality: parsed.isPersonality
+        isPersonality: parsed.isPersonality,
+        isProfessional: parsed.isProfessional,
+        isLifestyle: parsed.isLifestyle,
+        profileBalanceScore: parsed.profileBalanceScore,
+        varietyContribution: parsed.varietyContribution,
+        narrativeDevelopment: parsed.narrativeDevelopment,
+        balanceAnalysis: parsed.balanceAnalysis
       };
     }
   } catch (error) {
-    console.error(`Error parsing JSON for ${criteria}:`, error);
-    console.log('Response text sample:', responseText.substring(0, 500));
+    console.error(`Error parsing sophisticated JSON for ${criteria}:`, error);
+    console.log('Response text sample:', responseText.substring(0, 1000));
   }
   
-  // Enhanced fallback parsing
-  console.log(`JSON parsing failed for ${criteria}, using enhanced fallback parsing`);
-  return createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText);
+  // Enhanced fallback parsing with more sophistication
+  console.log(`JSON parsing failed for ${criteria}, using sophisticated fallback parsing`);
+  return createSophisticatedFallbackResponse(fileName, photoUrl, criteria, responseText);
 }
 
-// Export for testing
-exports.parseEnhancedAIResponse = parseEnhancedAIResponse;
-
-// ENHANCED FALLBACK RESPONSES
-function createEnhancedFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
+// SOPHISTICATED FALLBACK RESPONSES
+function createSophisticatedFallbackResponse(fileName, photoUrl, criteria, responseText = '') {
   let score = 75;
   
-  const scoreMatch = responseText.match(/(?:score|rating):?\s*(\d+)/i);
-  if (scoreMatch) {
-    score = Math.min(Math.max(parseInt(scoreMatch[1], 10), 0), 100);
+  // Enhanced score detection
+  const scoreMatches = responseText.match(/(?:score|rating|quality):?\s*(\d+)/gi);
+  if (scoreMatches && scoreMatches.length > 0) {
+    const scores = scoreMatches.map(match => {
+      const num = match.match(/(\d+)/);
+      return num ? parseInt(num[1], 10) : 75;
+    });
+    score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   }
   
-  let bestQuality = getCriteriaSpecificFallback(criteria, responseText);
-  if (responseText.toLowerCase().includes('great lighting')) {
-    bestQuality = "Excellent lighting creates an appealing look";
-  } else if (responseText.toLowerCase().includes('natural')) {
-    bestQuality = "Natural and authentic appearance is very attractive";
-  } else if (responseText.toLowerCase().includes('confident')) {
-    bestQuality = "Projects confidence which is highly appealing";
+  // Sophisticated quality assessment from text
+  let bestQuality = getSophisticatedFallback(criteria, responseText);
+  let suggestions = ["Professional analysis recommends technical improvements"];
+  let strengths = [bestQuality];
+  let improvements = suggestions;
+  
+  // Enhanced content analysis
+  if (responseText.toLowerCase().includes('excellent') || responseText.toLowerCase().includes('outstanding')) {
+    score = Math.max(score, 85);
+    bestQuality = "Exceptional photo quality with professional appeal";
+  } else if (responseText.toLowerCase().includes('great') || responseText.toLowerCase().includes('strong')) {
+    score = Math.max(score, 80);
+    bestQuality = "Strong visual appeal with good technical execution";
   }
   
-  let suggestions = ["Consider enhancing lighting for better appeal"];
-  if (responseText.toLowerCase().includes('background')) {
-    suggestions = ["Try a less distracting background"];
-  } else if (responseText.toLowerCase().includes('angle')) {
-    suggestions = ["Experiment with different camera angles"];
-  }
-  
-  const tags = [];
-  if (responseText.toLowerCase().includes('social')) tags.push('social');
-  if (responseText.toLowerCase().includes('activity')) tags.push('activity');
-  if (responseText.toLowerCase().includes('personality')) tags.push('personality');
+  // Sophisticated technical feedback extraction
+  const technicalFeedback = extractTechnicalFeedback(responseText);
+  const datingInsights = extractDatingInsights(responseText, criteria);
+  const tags = extractSophisticatedTags(responseText, criteria);
   
   return {
     fileName: fileName,
     storageURL: photoUrl,
-    score: score,
+    score: Math.min(Math.max(score, 0), 100),
+    
+    detailedScores: {
+      technicalQuality: Math.max(score - 5, 0),
+      visualAppeal: score,
+      attractiveness: Math.max(score - 3, 0),
+      personalityProjection: Math.max(score - 7, 0),
+      datingMarketValue: Math.max(score - 2, 0),
+      conversationPotential: Math.max(score - 10, 0),
+      authenticityLevel: Math.max(score - 5, 0),
+      approachabilityFactor: Math.max(score - 4, 0)
+    },
+    
     visualQuality: Math.max(score - 5, 0),
     attractivenessScore: score,
     datingAppealScore: Math.max(score - 3, 0),
     swipeWorthiness: Math.max(score - 2, 0),
+    
     tags: tags,
     bestQuality: bestQuality,
     suggestions: suggestions,
-    strengths: [bestQuality],
-    improvements: suggestions,
-    nextPhotoSuggestions: ["Add complementary photos to showcase different aspects"],
-    technicalFeedback: {},
-    datingInsights: {
-      personalityProjected: [],
-      demographicAppeal: null,
-      profileRole: null
-    }
+    strengths: strengths,
+    improvements: improvements,
+    nextPhotoSuggestions: ["Add complementary photos for complete profile presentation"],
+    
+    technicalFeedback: technicalFeedback,
+    datingInsights: datingInsights,
+    
+    // Initialize all possible fields to prevent errors
+    competitiveAnalysis: null,
+    improvementStrategy: null,
+    positioningStrategy: null,
+    conversationStrategy: null,
+    marketAnalysis: null,
+    authenticityAnalysis: null,
+    balanceStrategy: null
   };
+}
+
+// Helper functions for sophisticated fallback parsing
+function extractTechnicalFeedback(responseText) {
+  return {
+    lighting: responseText.toLowerCase().includes('lighting') ? "Lighting analysis available" : "Consider lighting optimization",
+    composition: responseText.toLowerCase().includes('composition') ? "Composition feedback provided" : "Focus on composition improvement",
+    styling: responseText.toLowerCase().includes('style') || responseText.toLowerCase().includes('outfit') ? "Styling guidance included" : "Enhance styling choices"
+  };
+}
+
+function extractDatingInsights(responseText, criteria) {
+  const personalityTraits = [];
+  if (responseText.toLowerCase().includes('confident')) personalityTraits.push('confident');
+  if (responseText.toLowerCase().includes('friendly')) personalityTraits.push('friendly');
+  if (responseText.toLowerCase().includes('approachable')) personalityTraits.push('approachable');
+  if (responseText.toLowerCase().includes('authentic')) personalityTraits.push('authentic');
+  
+  return {
+    personalityProjected: personalityTraits,
+    emotionalIntelligence: null,
+    demographicAppeal: "Analysis in progress",
+    marketPositioning: null,
+    relationshipType: null,
+    conversationStarters: [],
+    psychologicalImpact: null,
+    profileRole: getSophisticatedProfileRole(criteria)
+  };
+}
+
+function extractSophisticatedTags(responseText, criteria) {
+  const tags = [];
+  const text = responseText.toLowerCase();
+  
+  if (text.includes('professional')) tags.push('professional');
+  if (text.includes('casual')) tags.push('casual');
+  if (text.includes('social')) tags.push('social');
+  if (text.includes('activity')) tags.push('activity');
+  if (text.includes('personality')) tags.push('personality');
+  if (text.includes('attractive')) tags.push('attractive');
+  if (text.includes('natural')) tags.push('natural');
+  if (text.includes('confident')) tags.push('confident');
+  
+  return tags.length > 0 ? tags : ['analyzed', 'processed'];
+}
+
+function getSophisticatedFallback(criteria, responseText) {
+  const qualityIndicators = {
+    'profile_order': "Photo analyzed for strategic profile positioning",
+    'conversation_starters': "Photo evaluated for conversation engagement potential",
+    'broad_appeal': "Photo assessed for demographic market appeal",
+    'authenticity': "Photo reviewed for authentic personality expression",
+    'balanced': "Photo categorized for balanced profile creation",
+    'best': "Comprehensive professional analysis completed"
+  };
+  
+  return qualityIndicators[criteria] || "Professional photo analysis completed";
+}
+
+function getSophisticatedProfileRole(criteria) {
+  const roles = {
+    'profile_order': 'Strategic positioning specialist',
+    'conversation_starters': 'Conversation catalyst',
+    'broad_appeal': 'Mass market appeal driver',
+    'authenticity': 'Authentic personality showcase',
+    'balanced': 'Profile balance contributor',
+    'best': 'Primary attraction element'
+  };
+  
+  return roles[criteria] || 'Dating profile enhancement';
 }
 
 function createFallbackResponse(fileName, photoUrl, criteria, errorMessage) {
@@ -608,11 +1093,21 @@ function createFallbackResponse(fileName, photoUrl, criteria, errorMessage) {
     fileName: fileName,
     storageURL: photoUrl,
     score: 70,
+    detailedScores: {
+      technicalQuality: 65,
+      visualAppeal: 70,
+      attractiveness: 70,
+      personalityProjection: 65,
+      datingMarketValue: 68,
+      conversationPotential: 60,
+      authenticityLevel: 67,
+      approachabilityFactor: 68
+    },
     visualQuality: 65,
     attractivenessScore: 70,
     datingAppealScore: 68,
     swipeWorthiness: 67,
-    tags: [],
+    tags: ['uploaded', 'processing'],
     bestQuality: "Photo uploaded successfully",
     suggestions: ["Analysis temporarily unavailable - please try again"],
     strengths: ["Photo processed successfully"],
@@ -621,8 +1116,7 @@ function createFallbackResponse(fileName, photoUrl, criteria, errorMessage) {
     technicalFeedback: {},
     datingInsights: {
       personalityProjected: [],
-      demographicAppeal: null,
-      profileRole: null
+      profileRole: "Processing"
     }
   };
 }
@@ -632,6 +1126,16 @@ function createRejectedResponse(fileName, photoUrl, reason) {
     fileName: fileName,
     storageURL: photoUrl,
     score: 0,
+    detailedScores: {
+      technicalQuality: 0,
+      visualAppeal: 0,
+      attractiveness: 0,
+      personalityProjection: 0,
+      datingMarketValue: 0,
+      conversationPotential: 0,
+      authenticityLevel: 0,
+      approachabilityFactor: 0
+    },
     visualQuality: 0,
     attractivenessScore: 0,
     datingAppealScore: 0,
@@ -645,27 +1149,9 @@ function createRejectedResponse(fileName, photoUrl, reason) {
     technicalFeedback: {},
     datingInsights: {
       personalityProjected: [],
-      demographicAppeal: null,
-      profileRole: null
+      profileRole: "Rejected"
     }
   };
-}
-
-function getCriteriaSpecificFallback(criteria, responseText) {
-  switch (criteria) {
-    case 'profile_order':
-      return "Photo analyzed for optimal profile positioning";
-    case 'conversation_starters':
-      return "Photo evaluated for conversation potential";
-    case 'broad_appeal':
-      return "Photo assessed for demographic appeal";
-    case 'authenticity':
-      return "Photo reviewed for authenticity and naturalness";
-    case 'balanced':
-      return "Photo categorized for balanced profile creation";
-    default:
-      return "Comprehensive photo analysis completed";
-  }
 }
 
 // ENHANCED CONFIG FUNCTION
@@ -686,21 +1172,27 @@ exports.getConfig = onCall({
       'activity',
       'personality'
     ],
-    version: '3.0.0',
+    version: '3.1.0',
     features: {
-      enhancedAnalysis: true,
+      sophisticatedAnalysis: true,
+      professionalConsultation: true,
       detailedScoring: true,
-      personalityInsights: true,
-      technicalFeedback: true,
-      profilePositioning: true,
+      psychologicalInsights: true,
+      marketPositioning: true,
+      competitiveAnalysis: true,
+      strategicGuidance: true,
+      personalityAssessment: true,
+      technicalExpertise: true,
+      datingMarketAnalysis: true,
       conversationOptimization: true,
-      appealAnalysis: true,
-      authenticityCheck: true,
+      authenticityEvaluation: true,
+      profileBalancing: true,
       enhancedImageProcessing: true,
       contentSafety: true,
       base64Processing: true,
       promoCodeSupport: true
-    }
+    },
+    analysisDepth: 'world_class_consultant_level'
   };
 });
 
@@ -735,11 +1227,13 @@ exports.initializeUser = onCall({
         isUnlimited: false,
         preferences: {
           defaultCriteria: 'best',
+          analysisDepth: 'professional',
           notifications: true
         },
         metadata: {
           signupPeriod: inLaunchPeriod ? 'launch' : 'standard',
-          version: '3.0.0'
+          version: '3.1.0',
+          analysisLevel: 'sophisticated'
         }
       });
       
@@ -748,7 +1242,8 @@ exports.initializeUser = onCall({
         success: true, 
         newUser: true, 
         freeCredits: startingCredits,
-        isLaunchPeriod: inLaunchPeriod
+        isLaunchPeriod: inLaunchPeriod,
+        analysisLevel: 'sophisticated'
       };
     } else {
       const userData = userDoc.data();
@@ -758,7 +1253,8 @@ exports.initializeUser = onCall({
         newUser: false, 
         freeCredits: userData.freeCredits || 0,
         isUnlimited: userData.isUnlimited || false,
-        isLaunchPeriod: inLaunchPeriod
+        isLaunchPeriod: inLaunchPeriod,
+        analysisLevel: 'sophisticated'
       };
     }
   } catch (error) {
@@ -785,31 +1281,38 @@ exports.redeemPromoCode = onCall({
   const promoCodes = {
     'K9X7M3P8Q2W5': {
       credits: 999,
-      description: 'Unlimited Access - Premium',
+      description: 'Unlimited Access - Professional Consultant Level',
       isUnlimited: true,
       expirationDate: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
       maxUses: 10,
     },
     'LAUNCH50': {
       credits: 50,
-      description: 'Launch Special - 50 Credits',
+      description: 'Launch Special - 50 Professional Analyses',
       isUnlimited: false,
       expirationDate: new Date('2025-12-31'),
       maxUses: 100,
     },
     'BETA20': {
       credits: 20,
-      description: 'Beta Tester Bonus',
+      description: 'Beta Tester - 20 Sophisticated Analyses',
       isUnlimited: false,
       expirationDate: new Date('2025-12-31'),
       maxUses: 50,
     },
     'FRIEND10': {
       credits: 10,
-      description: 'Friend Referral',
+      description: 'Friend Referral - 10 Expert Analyses',
       isUnlimited: false,
       expirationDate: new Date('2025-12-31'),
       maxUses: 500,
+    },
+    'PREMIUM100': {
+      credits: 100,
+      description: 'Premium Package - 100 World-Class Analyses',
+      isUnlimited: false,
+      expirationDate: new Date('2025-12-31'),
+      maxUses: 25,
     }
   };
 
@@ -850,6 +1353,7 @@ exports.redeemPromoCode = onCall({
         creditsAdded: details.credits,
         isUnlimited: details.isUnlimited,
         description: details.description,
+        analysisLevel: 'sophisticated'
       });
 
       // Update global usage
@@ -863,19 +1367,21 @@ exports.redeemPromoCode = onCall({
         freeCredits: details.isUnlimited ? 999999 : currentCredits + details.credits,
         isUnlimited: details.isUnlimited || userData.isUnlimited || false,
         lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        'metadata.analysisLevel': 'sophisticated'
       };
 
       transaction.set(userRef, updateData, { merge: true });
     });
 
-    console.log(`User ${uid} redeemed promo code ${code} for ${details.credits} credits`);
+    console.log(`User ${uid} redeemed sophisticated promo code ${code} for ${details.credits} credits`);
     
     return { 
       success: true, 
       promo: { 
         credits: details.credits, 
         isUnlimited: details.isUnlimited,
-        description: details.description
+        description: details.description,
+        analysisLevel: 'sophisticated'
       }
     };
   } catch (error) {
@@ -914,41 +1420,44 @@ exports.updateUserCredits = onCall({
       
       if (creditsToAdd) {
         newCredits += creditsToAdd;
-        console.log(`Adding ${creditsToAdd} credits to user ${uid}`);
+        console.log(`Adding ${creditsToAdd} sophisticated analysis credits to user ${uid}`);
       }
       
       if (creditsToDeduct) {
         if (userData.isUnlimited) {
-          console.log(`User ${uid} has unlimited plan, not deducting credits`);
+          console.log(`User ${uid} has unlimited sophisticated analysis plan, not deducting credits`);
         } else {
           if (newCredits < creditsToDeduct) {
-            throw new HttpsError('failed-precondition', 'Insufficient credits');
+            throw new HttpsError('failed-precondition', 'Insufficient credits for sophisticated analysis');
           }
           newCredits -= creditsToDeduct;
-          console.log(`Deducting ${creditsToDeduct} credits from user ${uid}`);
+          console.log(`Deducting ${creditsToDeduct} sophisticated analysis credits from user ${uid}`);
         }
       }
       
       const updateData = {
         freeCredits: Math.max(newCredits, 0),
-        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        'metadata.lastAnalysisLevel': 'sophisticated'
       };
       
       if (creditsToDeduct) {
         updateData.totalAnalyses = (userData.totalAnalyses || 0) + creditsToDeduct;
+        updateData.sophisticatedAnalyses = (userData.sophisticatedAnalyses || 0) + creditsToDeduct;
       }
       
       if (purchaseDetails) {
         updateData.lastPurchase = {
           ...purchaseDetails,
-          timestamp: admin.firestore.FieldValue.serverTimestamp()
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          analysisLevel: 'sophisticated'
         };
       }
       
       transaction.update(userRef, updateData);
     });
     
-    return { success: true };
+    return { success: true, analysisLevel: 'sophisticated' };
   } catch (error) {
     console.error('Error updating user credits:', error);
     throw error;
