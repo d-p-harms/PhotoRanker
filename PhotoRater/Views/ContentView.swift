@@ -450,6 +450,10 @@ struct ContentView: View {
                 switch result {
                 case .success(let rankedPhotos):
                     self.rankedPhotos = rankedPhotos
+                    // Automatically save analyzed photos to the gallery
+                    for photo in rankedPhotos {
+                        GalleryManager.shared.addPhoto(photo)
+                    }
                     self.pricingManager.deductCredits(count: photoCount)
                 case .failure(let error):
                     if error.localizedDescription.contains("Insufficient credits") {

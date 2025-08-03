@@ -5,7 +5,6 @@ struct PhotoResultCard: View {
     @State private var isLoading = true
     @State private var loadedImage: UIImage?
     @State private var showingDetailView = false
-    @EnvironmentObject var gallery: GalleryManager
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -108,33 +107,26 @@ struct PhotoResultCard: View {
                 }
                 .buttonStyle(PlainButtonStyle()) // Ensures reliable tapping
 
-                Button(action: {
-                    gallery.addPhoto(rankedPhoto)
-                }) {
-                    HStack {
-                        Image(systemName: "tray.and.arrow.down")
-                            .font(.subheadline)
-                        Text("Save to Gallery")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                        Spacer()
-                        Image(systemName: "plus")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.green.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                            )
-                    )
+                // Display that the photo has been saved automatically
+                HStack {
+                    Image(systemName: "tray.and.arrow.down.fill")
+                        .font(.subheadline)
+                    Text("Saved to Gallery")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Spacer()
                 }
-                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.green.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                )
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
