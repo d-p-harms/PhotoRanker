@@ -9,26 +9,15 @@ struct ProfileDetailView: View {
             let currentProfile = gallery.profiles[index]
             List {
                 ForEach(currentProfile.photos) { photo in
-                    HStack {
-                        if let image = photo.localImage {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 80, height: 80)
-                                .clipped()
-                        } else {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 80, height: 80)
-                        }
-                        Text(photo.fileName)
-                            .lineLimit(1)
-                    }
+                    GalleryPhotoCard(rankedPhoto: photo)
+                        .listRowInsets(EdgeInsets())
+                        .padding(.vertical, 4)
                 }
                 .onMove { offsets, dest in
                     gallery.movePhoto(at: offsets, to: dest, in: currentProfile)
                 }
             }
+            .listStyle(PlainListStyle())
             .navigationTitle(currentProfile.name)
             .toolbar { EditButton() }
         } else {
