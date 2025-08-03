@@ -66,6 +66,7 @@ struct GalleryPhotoCard: View {
             }
         }
         .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
@@ -84,7 +85,7 @@ struct GalleryPhotoCard: View {
                     .scaledToFill()
             } else if isLoading {
                 ProgressView()
-                    .frame(height: 180)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -95,7 +96,8 @@ struct GalleryPhotoCard: View {
                     )
             }
         }
-        .frame(height: 180)
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fill)
         .clipped()
         .cornerRadius(12)
     }
