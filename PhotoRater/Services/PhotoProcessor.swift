@@ -563,16 +563,41 @@ class PhotoProcessor: ObservableObject {
             return createBalancedSelection(from: photos, targetCount: 6)
             
         case .profileOrder:
-            // Sort by score (positioning value) and group by recommended position
-            return photos.sorted { photo1, photo2 in
-                // Extract position from reason if available
-                let position1 = extractPosition(from: photo1.reason)
-                let position2 = extractPosition(from: photo2.reason)
-                
-                if position1 != position2 {
-                    return position1 < position2
+            // Some older responses may not include explicit position markers.
+            // If positions are missing, derive them from scores so the UI can
+            // still show a meaningful profile order.
+
+            // First check if any photo already has a detectable position
+            let hasExplicitPositions = photos.contains { photo in
+                let position = extractPosition(from: photo.reason)
+                return position != 99 && position != 999
+            }
+
+            if hasExplicitPositions {
+                // Existing behaviour – sort using the embedded position info
+                return photos.sorted { photo1, photo2 in
+                    let position1 = extractPosition(from: photo1.reason)
+                    let position2 = extractPosition(from: photo2.reason)
+
+                    if position1 != position2 {
+                        return position1 < position2
+                    }
+                    return photo1.score > photo2.score
                 }
-                return photo1.score > photo2.score
+            } else {
+                // No explicit positions found – sort by score and assign positions
+                let sortedByScore = photos.sorted { $0.score > $1.score }
+                var withPositions: [RankedPhoto] = []
+
+                for (index, photo) in sortedByScore.enumerated() {
+                    let position = index + 1
+                    let positionLabel = position == 1 ? "Main Photo" : "Photo #\(position)"
+                    let baseReason = photo.reason ?? "Good quality photo"
+                    let updatedReason = "📍 Position: \(positionLabel)\n\n\(baseReason)"
+                    withPositions.append(photo.withUpdatedReason(updatedReason))
+                }
+
+                return withPositions
             }
             
         case .conversationStarters:
