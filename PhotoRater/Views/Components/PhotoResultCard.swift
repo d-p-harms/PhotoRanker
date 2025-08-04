@@ -112,21 +112,21 @@ struct PhotoResultCard: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    .frame(maxWidth: .infinity)
-                    .contentShape(Rectangle())
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.blue.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                            )
-                    )
                 }
-                .buttonStyle(PlainButtonStyle()) // Ensures reliable tapping
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .foregroundColor(.blue)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.blue.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                        )
+                )
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
