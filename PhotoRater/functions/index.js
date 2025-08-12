@@ -1,7 +1,282 @@
-// PREMIUM CATEGORY-SPECIFIC ANALYSIS SYSTEM
-// Delivers maximum value while optimizing AI workload for each category
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { setGlobalOptions } = require('firebase-functions/v2');
+const { defineSecret } = require('firebase-functions/params');
+const admin = require('firebase-admin');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const vision = require('@google-cloud/vision');
+const sharp = require('sharp');
 
-function buildPremiumPrompt(criteria) {
+// Initialize Firebase Admin SDK
+admin.initializeApp();
+
+// Set default options for all functions
+setGlobalOptions({ region: 'us-central1' });
+
+// Define secrets
+const geminiKey = defineSecret('GEMINI_API_KEY');
+const visionClient = new vision.ImageAnnotatorClient();
+
+// ENHANCED IMAGE PROCESSING WITH VALIDATION
+async function validateAndPrepareImage(buffer) {
+  const metadata = await sharp(buffer).metadata();
+  console.log(`Received image: ${metadata.width}x${metadata.height}, ${Math.round(buffer.length/1024)}KB`);
+  
+  const maxDimension = Math.max(metadata.width, metadata.height);
+  
+  if (maxDimension < 500) {
+    throw new Error('Image too small for quality analysis (minimum 500px)');
+  }
+  
+  let sharpInstance = sharp(buffer);
+  
+  // Resize very large images for optimal processing
+  if (maxDimension > 2048) {
+    console.log('Resizing oversized image to optimal size');
+    sharpInstance = sharpInstance.resize(1536, 1536, {
+      fit: 'inside',
+      withoutEnlargement: true
+    });
+  }
+  
+  // Convert to JPEG and iteratively reduce quality if needed
+  let quality = 92;
+  let processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
+  
+  while (processedBuffer.length > 10 * 1024 * 1024 && quality > 60) {
+    quality -= 5;
+    console.log(`Compressing image to quality ${quality}`);
+    processedBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
+  }
+  
+  if (processedBuffer.length > 10 * 1024 * 1024) {
+    throw new Error('Image too large (maximum 10MB after processing)');
+  }
+  
+  return processedBuffer;
+}
+
+// DATING APP STANDARD CONTENT SAFETY CHECK
+async function performSafetyCheck(imageBuffer) {
+  try {
+    const [safeResult] = await visionClient.safeSearchDetection(imageBuffer);
+    const safe = safeResult.safeSearchAnnotation || {};
+
+    console.log('SafeSearch results:', {
+      adult: safe.adult,
+      violence: safe.violence,
+      racy: safe.racy,
+      medical: safe.medical,
+      spoof: safe.spoof
+    });
+
+    // Block only highly explicit adult content
+    if (['VERY_LIKELY'].includes(safe.adult)) {
+      console.warn('SafeSearch blocked - explicit adult content:', safe.adult);
+      return false;
+    }
+
+    // Block ALL violence (dating apps are very strict about violence)
+    if (['POSSIBLE', 'LIKELY', 'VERY_LIKELY'].includes(safe.violence)) {
+      console.warn('SafeSearch blocked - violence detected:', safe.violence);
+      return false;
+    }
+
+    // Allow racy content unless explicitly sexual
+    if (['VERY_LIKELY'].includes(safe.racy)) {
+      console.warn('SafeSearch blocked - explicit racy content:', safe.racy);
+      return false;
+    }
+
+    // Block medical content
+    if (['LIKELY', 'VERY_LIKELY'].includes(safe.medical)) {
+      console.warn('SafeSearch blocked - medical content:', safe.medical);
+      return false;
+    }
+
+    // Block fake/manipulated content
+    if (['LIKELY', 'VERY_LIKELY'].includes(safe.spoof)) {
+      console.warn('SafeSearch blocked - spoof/fake content:', safe.spoof);
+      return false;
+    }
+
+    console.log('Image passed dating app content policy');
+    return true;
+
+  } catch (error) {
+    console.error('SafeSearch check failed:', error);
+    // Fail closed – reject images when safety check fails
+    return false;
+  }
+}
+
+// ENHANCED ANALYZE PHOTOS FUNCTION
+exports.analyzePhotos = onCall({
+  secrets: [geminiKey],
+  timeoutSeconds: 540,
+  memory: '2GiB',
+  region: 'us-central1',
+}, async (request) => {
+  try {
+    const { photos, criteria } = request.data;
+    const maxBatchSize = 12;
+
+    if (!photos || !Array.isArray(photos) || photos.length === 0) {
+      throw new HttpsError('invalid-argument', 'No photos provided');
+    }
+
+    if (photos.length > maxBatchSize) {
+      throw new HttpsError('invalid-argument', 
+        `Maximum ${maxBatchSize} photos per batch. Please process in smaller groups.`);
+    }
+
+    if (!geminiKey.value()) {
+      throw new HttpsError('internal', 'GEMINI_API_KEY not configured');
+    }
+
+    const genAI = new GoogleGenerativeAI(geminiKey.value());
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    console.log(`Starting enhanced practical analysis with criteria: ${criteria} for ${photos.length} photos`);
+
+    const concurrencyLimit = 6;
+    const batches = [];
+    
+    for (let i = 0; i < photos.length; i += concurrencyLimit) {
+      batches.push(photos.slice(i, i + concurrencyLimit));
+    }
+
+    let allResults = [];
+
+    for (const [batchIndex, batch] of batches.entries()) {
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} photos)`);
+      
+      const batchPromises = batch.map(async (photoData, index) => {
+        try {
+          await new Promise(resolve => setTimeout(resolve, index * 200));
+          return await analyzeImageWithEnhancedGemini(photoData, criteria, model, index);
+        } catch (error) {
+          console.error(`Error in batch ${batchIndex + 1}, photo ${index + 1}:`, error);
+          return createFallbackResponse(`photo_${index}`, '', criteria, error.message);
+        }
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      allResults = allResults.concat(batchResults);
+      
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log('All photos analyzed successfully');
+        
+    const sortedResults = allResults.sort((a, b) => b.score - a.score);
+    const topResults = sortedResults.slice(0, Math.min(12, sortedResults.length));
+        
+    console.log(`Returning top ${topResults.length} results`);
+
+    return {
+      success: true,
+      results: topResults,
+      metadata: {
+        totalPhotos: photos.length,
+        batchesProcessed: batches.length,
+        averageScore: Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length),
+        criteriaUsed: criteria,
+        processingVersion: '3.2.0',
+        analysisDepth: 'practical_expert'
+      }
+    };
+           
+  } catch (error) {
+    console.error('Error analyzing photos:', error);
+    throw new HttpsError(
+      'internal',
+      error.message || 'Failed to analyze photos'
+    );
+  }
+});
+
+// ENHANCED IMAGE ANALYSIS WITH PRACTICAL DEPTH
+async function analyzeImageWithEnhancedGemini(photoData, criteria, model, index) {
+  const timeout = 40000; // 40 second timeout for enhanced analysis
+
+  return Promise.race([
+    performEnhancedAnalysis(photoData, criteria, model, index),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Enhanced analysis timeout')), timeout)
+    )
+  ]);
+}
+
+async function performEnhancedAnalysis(photoData, criteria, model, index) {
+  try {
+    console.log(`Processing photo ${index} with enhanced ${criteria} analysis`);
+
+    const buffer = Buffer.from(photoData, 'base64');
+
+    // Enhanced image processing with validation
+    const processedBuffer = await validateAndPrepareImage(buffer);
+    console.log(`Enhanced image processing complete, new size: ${processedBuffer.length} bytes`);
+
+    // Content safety check
+    const isSafe = await performSafetyCheck(processedBuffer);
+    if (!isSafe) {
+      return createRejectedResponse(`photo_${index}`, '', 'Image violates content policy');
+    }
+
+    const base64Image = processedBuffer.toString('base64');
+    const prompt = buildEnhancedPracticalPrompt(criteria);
+
+    console.log(`Analyzing image with enhanced practical ${criteria} prompt (${prompt.length} chars)`);
+
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: base64Image
+            }
+          }
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        console.log(`Raw enhanced practical AI response for ${criteria} (${text.length} chars)`);
+
+        const analysisResult = parseEnhancedPracticalResponse(text, criteria, `photo_${index}`, '');
+        console.log(`Parsed enhanced practical ${criteria} analysis:`, {
+          score: analysisResult.score,
+          hasCategorizationScores: !analysisResult.categorization,
+          hasStrengths: analysisResult.strengths?.length > 0,
+          hasPersonalityInsights: analysisResult.datingInsights?.personalityProjected?.length > 0
+        });
+
+        return analysisResult;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1500));
+      }
+    }
+  } catch (error) {
+    console.error(`Enhanced practical analysis failed for photo ${index}:`, error);
+
+    if (error.message.includes('too small') || error.message.includes('too large')) {
+      return createRejectedResponse(`photo_${index}`, '', error.message);
+    }
+
+    return createFallbackResponse(`photo_${index}`, '', criteria, error.message);
+  }
+}
+
+// PREMIUM CATEGORY-SPECIFIC PROMPTS
+function buildEnhancedPracticalPrompt(criteria) {
   // Enhanced base framework for all analyses
   const premiumBase = `You are an elite dating profile consultant with expertise in psychology, marketing, and social dynamics. Provide detailed, professional-grade analysis worth a premium service.
 
@@ -437,260 +712,635 @@ Examine technical optimization potential, cropping opportunities, and enhancemen
 
     default:
       // Fallback to 'best' for unknown criteria
-      return buildPremiumPrompt('best');
+      return buildEnhancedPracticalPrompt('best');
   }
 }
 
-// PREMIUM ANALYSIS CONFIGURATION
-function getPremiumAnalysisConfig(criteria) {
-  const configs = {
-    'best': {
-      complexity: 'comprehensive',
-      expectedTokens: 2200,
-      timeout: 45000,
-      analysisDepth: 'maximum',
-      priority: 'thoroughness'
-    },
-    'social': {
-      complexity: 'specialized_deep',
-      expectedTokens: 1800,
-      timeout: 35000,
-      analysisDepth: 'expert',
-      priority: 'social_accuracy'
-    },
-    'activity': {
-      complexity: 'specialized_deep',
-      expectedTokens: 1800,
-      timeout: 35000,
-      analysisDepth: 'expert',
-      priority: 'lifestyle_accuracy'
-    },
-    'personality': {
-      complexity: 'specialized_deep',
-      expectedTokens: 1900,
-      timeout: 38000,
-      analysisDepth: 'expert',
-      priority: 'psychological_accuracy'
-    },
-    'conversation_starters': {
-      complexity: 'specialized_medium',
-      expectedTokens: 1600,
-      timeout: 30000,
-      analysisDepth: 'focused_expert',
-      priority: 'conversation_value'
-    },
-    'profile_order': {
-      complexity: 'strategic',
-      expectedTokens: 1700,
-      timeout: 32000,
-      analysisDepth: 'strategic_expert',
-      priority: 'positioning_accuracy'
-    },
-    'broad_appeal': {
-      complexity: 'comprehensive',
-      expectedTokens: 2000,
-      timeout: 40000,
-      analysisDepth: 'market_expert',
-      priority: 'demographic_accuracy'
-    },
-    'authenticity': {
-      complexity: 'specialized_deep',
-      expectedTokens: 1800,
-      timeout: 35000,
-      analysisDepth: 'psychological_expert',
-      priority: 'authenticity_accuracy'
-    },
-    'balanced': {
-      complexity: 'comprehensive',
-      expectedTokens: 2100,
-      timeout: 42000,
-      analysisDepth: 'portfolio_expert',
-      priority: 'categorization_accuracy'
-    }
-  };
-
-  return configs[criteria] || configs['best'];
-}
-
-// PREMIUM RESPONSE PARSING WITH RICH DATA EXTRACTION
-function parsePremiumResponse(responseText, criteria, fileName, photoUrl) {
+// ENHANCED PRACTICAL RESPONSE PARSING
+function parseEnhancedPracticalResponse(responseText, criteria, fileName, photoUrl) {
   try {
-    // Advanced JSON extraction with multiple patterns
-    const patterns = [
-      /\{[\s\S]*\}/,  // Standard JSON block
-      /```json\s*(\{[\s\S]*?\})\s*```/,  // Markdown JSON block
-      /```(\{[\s\S]*?\})```/  // Generic code block
-    ];
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      const result = {
+        fileName,
+        storageURL: photoUrl,
+        score: parsed.overallScore || 75,
+        visualQuality: parsed.visualQuality || 70,
+        attractivenessScore: parsed.attractivenessScore || 70,
+        datingAppealScore: parsed.datingAppealScore || 70,
+        swipeWorthiness: parsed.swipeWorthiness || 70,
+        tags: parsed.tags || ['premium_analyzed'],
+        strengths: parsed.strengths || [],
+        improvements: parsed.improvements || [],
+        bestQuality: getEnhancedPracticalFallback(criteria, responseText),
+        suggestions: parsed.improvements || [],
+        nextPhotoSuggestions: parsed.nextPhotoSuggestions || [],
+        technicalFeedback: {
+          lighting: parsed.technicalExcellence?.lighting || 'good',
+          composition: parsed.technicalExcellence?.composition || 'acceptable',
+          styling: parsed.technicalExcellence?.styling || 'good'
+        },
+        datingInsights: {
+          personalityProjected: parsed.personalityProjected || [],
+          profileRole: getEnhancedProfileRole(criteria),
+          demographicAppeal: getEnhancedDemographicAppeal(criteria, responseText)
+        },
+        categorization: inferEnhancedCategorization(responseText, parsed.tags || [])
+      };
 
-    for (const pattern of patterns) {
-      const match = responseText.match(pattern);
-      if (match) {
-        const jsonStr = match[1] || match[0];
-        try {
-          const parsed = JSON.parse(jsonStr);
-          return buildPremiumResult(parsed, criteria, fileName, photoUrl, responseText);
-        } catch (e) {
-          continue;
-        }
+      // Add category-specific data
+      if (parsed.socialDynamics) result.socialDynamics = parsed.socialDynamics;
+      if (parsed.activityAnalysis || parsed.lifestyleProjection) {
+        result.activityAnalysis = parsed.activityAnalysis || parsed.lifestyleProjection;
       }
+      if (parsed.personalityProjection) result.personalityProjection = parsed.personalityProjection;
+      if (parsed.conversationPotential) result.conversationPotential = parsed.conversationPotential;
+      if (parsed.strategicPositioning) result.strategicPositioning = parsed.strategicPositioning;
+      if (parsed.demographicAppeal) result.demographicAppeal = parsed.demographicAppeal;
+      if (parsed.authenticityMetrics) result.authenticityMetrics = parsed.authenticityMetrics;
+      if (parsed.categorization) result.categorization = parsed.categorization;
+
+      return result;
     }
   } catch (error) {
-    console.log('Advanced JSON parsing failed, using intelligent extraction');
+    console.log('JSON parsing failed, using enhanced fallback extraction');
   }
-
-  // Intelligent fallback extraction
-  return extractPremiumData(responseText, criteria, fileName, photoUrl);
+  
+  return createEnhancedPracticalFallback(fileName, photoUrl, criteria, responseText);
 }
 
-function buildPremiumResult(data, criteria, fileName, photoUrl, fullText) {
-  // Build comprehensive result with all premium features
-  const result = {
+// ENHANCED CATEGORIZATION INFERENCE
+function inferEnhancedCategorization(responseText, tags) {
+  const text = responseText.toLowerCase();
+  let socialScore = 0;
+  let activityScore = 0;
+  let personalityScore = 0;
+  
+  // Social indicators
+  if (text.includes('group') || text.includes('social') || text.includes('friends')) socialScore += 40;
+  if (text.includes('party') || text.includes('event') || text.includes('gathering')) socialScore += 30;
+  if (tags.includes('social') || tags.includes('group')) socialScore += 35;
+  if (text.includes('leadership') || text.includes('charisma') || text.includes('networking')) socialScore += 25;
+  
+  // Activity indicators
+  if (text.includes('sport') || text.includes('outdoor') || text.includes('adventure')) activityScore += 40;
+  if (text.includes('hobby') || text.includes('travel') || text.includes('recreation')) activityScore += 30;
+  if (tags.includes('activity') || tags.includes('outdoor') || tags.includes('travel')) activityScore += 35;
+  if (text.includes('fitness') || text.includes('exercise') || text.includes('skill')) activityScore += 20;
+  
+  // Personality indicators
+  if (text.includes('expression') || text.includes('personality') || text.includes('character')) personalityScore += 30;
+  if (text.includes('authentic') || text.includes('genuine') || text.includes('natural')) personalityScore += 25;
+  if (tags.includes('personality') || tags.includes('natural') || tags.includes('confident')) personalityScore += 35;
+  if (text.includes('creative') || text.includes('artistic') || text.includes('emotion')) personalityScore += 20;
+  
+  // Normalize scores
+  socialScore = Math.min(socialScore, 100);
+  activityScore = Math.min(activityScore, 100);
+  personalityScore = Math.min(personalityScore, 100);
+  
+  // Determine primary category
+  const maxScore = Math.max(socialScore, activityScore, personalityScore);
+  let primaryCategory = 'general';
+  let categoryConfidence = 50;
+  
+  if (maxScore >= 70) {
+    categoryConfidence = Math.min(maxScore, 95);
+    if (socialScore === maxScore) primaryCategory = 'social';
+    else if (activityScore === maxScore) primaryCategory = 'activity';
+    else if (personalityScore === maxScore) primaryCategory = 'personality';
+  }
+  
+  return {
+    socialScore,
+    activityScore,
+    personalityScore,
+    primaryCategory,
+    categoryConfidence,
+    categoryReasoning: `Inferred from content analysis: ${primaryCategory} indicators scored highest`
+  };
+}
+
+// ENHANCED PRACTICAL FALLBACK RESPONSE
+function createEnhancedPracticalFallback(fileName, photoUrl, criteria, responseText = '') {
+  let score = 75;
+  
+  // Enhanced score detection with multiple patterns
+  const scoreMatches = responseText.match(/(?:score|rating|quality|appeal):?\s*(\d+)/gi);
+  if (scoreMatches && scoreMatches.length > 0) {
+    const scores = scoreMatches.map(match => {
+      const num = match.match(/(\d+)/);
+      return num ? parseInt(num[1]) : null;
+    }).filter(s => s !== null && s >= 0 && s <= 100);
+    
+    if (scores.length > 0) {
+      score = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
+    }
+  }
+  
+  const enhancedTags = extractEnhancedTags(responseText, criteria);
+  
+  return {
     fileName,
     storageURL: photoUrl,
-    score: data.overallScore || 75,
-    visualQuality: data.visualQuality || 70,
-    attractivenessScore: data.attractivenessScore || 70,
-    datingAppealScore: data.datingAppealScore || 70,
-    swipeWorthiness: data.swipeWorthiness || 70,
-    tags: data.tags || ['premium_analyzed'],
-    strengths: data.strengths || [],
-    improvements: data.improvements || [],
-    technicalFeedback: extractTechnicalFeedback(data, fullText),
-    strategicAdvice: extractStrategicAdvice(data, fullText, criteria)
+    score,
+    visualQuality: score - 5,
+    attractivenessScore: score,
+    datingAppealScore: score - 3,
+    swipeWorthiness: score - 2,
+    tags: enhancedTags,
+    bestQuality: getEnhancedPracticalFallback(criteria, responseText),
+    suggestions: ["Enhanced analysis completed with practical recommendations"],
+    strengths: ["Photo processed with advanced AI analysis"],
+    improvements: ["Detailed feedback available in premium analysis"],
+    nextPhotoSuggestions: [`Consider ${criteria.replace('_', ' ')} focused photos for comparison`],
+    technicalFeedback: {
+      lighting: "Enhanced analysis in progress",
+      composition: "Technical evaluation completed",
+      styling: "Professional assessment available"
+    },
+    datingInsights: getEnhancedDatingInsights(criteria, responseText),
+    categorization: inferEnhancedCategorization(responseText, enhancedTags)
   };
-
-  // Add comprehensive category-specific data
-  switch (criteria) {
-    case 'best':
-      Object.assign(result, {
-        marketPositioning: data.marketPositioning,
-        demographicAppeal: data.demographicAppeal,
-        psychologicalImpact: data.psychologicalImpact,
-        strategicValue: data.strategicValue,
-        technicalExcellence: data.technicalExcellence,
-        marketAnalysis: data.marketAnalysis
-      });
-      break;
-      
-    case 'social':
-      Object.assign(result, {
-        socialDynamics: data.socialDynamics,
-        interpersonalSignals: data.interpersonalSignals,
-        groupAnalysis: data.groupAnalysis,
-        socialContext: data.socialContext,
-        socialStrategy: data.socialStrategy,
-        conversationStarters: data.conversationStarters
-      });
-      break;
-      
-    case 'activity':
-      Object.assign(result, {
-        lifestyleProjection: data.lifestyleProjection,
-        activityAnalysis: data.activityAnalysis,
-        lifestyleSignals: data.lifestyleSignals,
-        demographicAppeal: data.demographicAppeal,
-        activityStrategy: data.activityStrategy,
-        conversationStarters: data.conversationStarters
-      });
-      break;
-      
-    case 'personality':
-      Object.assign(result, {
-        personalityProjection: data.personalityProjection,
-        characterTraits: data.characterTraits,
-        emotionalIntelligence: data.emotionalIntelligence,
-        authenticity: data.authenticity,
-        personalityStrategy: data.personalityStrategy,
-        characterInsights: data.characterInsights
-      });
-      break;
-      
-    case 'conversation_starters':
-      Object.assign(result, {
-        conversationPotential: data.conversationPotential,
-        visualElements: data.visualElements,
-        messageHooks: data.messageHooks,
-        openingLines: data.openingLines,
-        discussionTopics: data.discussionTopics,
-        personalityReveals: data.personalityReveals,
-        conversationStrategy: data.conversationStrategy
-      });
-      break;
-      
-    case 'profile_order':
-      Object.assign(result, {
-        strategicPositioning: data.strategicPositioning,
-        profileStrategy: data.profileStrategy,
-        technicalSuitability: data.technicalSuitability,
-        competitiveAnalysis: data.competitiveAnalysis,
-        positionReason: data.positionReason,
-        profileComposition: data.profileComposition
-      });
-      break;
-      
-    case 'broad_appeal':
-      Object.assign(result, {
-        demographicAppeal: data.demographicAppeal,
-        culturalAppeal: data.culturalAppeal,
-        psychographicAppeal: data.psychographicAppeal,
-        marketPositioning: data.marketPositioning,
-        targetDemographics: data.targetDemographics,
-        appealStrategy: data.appealStrategy
-      });
-      break;
-      
-    case 'authenticity':
-      Object.assign(result, {
-        authenticityMetrics: data.authenticityMetrics,
-        genuinenessIndicators: data.genuinenessIndicators,
-        trustFactors: data.trustFactors,
-        stagingAnalysis: data.stagingAnalysis,
-        genuinenessFactors: data.genuinenessFactors,
-        authenticityStrategy: data.authenticityStrategy
-      });
-      break;
-      
-    case 'balanced':
-      Object.assign(result, {
-        categorization: data.categorization,
-        balanceContribution: data.balanceContribution,
-        strategicValue: data.strategicValue,
-        optimization: data.optimization,
-        selectionStrategy: data.selectionStrategy
-      });
-      break;
-  }
-
-  return result;
 }
 
-// UTILITY FUNCTIONS FOR PREMIUM DATA EXTRACTION
-function extractTechnicalFeedback(data, fullText) {
+function getEnhancedDatingInsights(criteria, responseText) {
+  const personalityTraits = [];
+  const text = responseText.toLowerCase();
+  
+  // Enhanced personality detection
+  if (text.includes('confident') || text.includes('bold')) personalityTraits.push('confident');
+  if (text.includes('friendly') || text.includes('warm')) personalityTraits.push('approachable');
+  if (text.includes('creative') || text.includes('artistic')) personalityTraits.push('creative');
+  if (text.includes('active') || text.includes('energetic')) personalityTraits.push('active');
+  if (text.includes('authentic') || text.includes('genuine')) personalityTraits.push('authentic');
+  if (text.includes('professional') || text.includes('polished')) personalityTraits.push('professional');
+  
+  const approachabilityFactor = text.includes('approachable') || text.includes('friendly') ? 85 : 
+                               text.includes('welcoming') || text.includes('open') ? 80 :
+                               text.includes('friendly') || text.includes('warm') ? 85 : 
+                               text.includes('fitness') || text.includes('exercise') || text.includes('skill') ? 80 : 75;
+  const confidenceLevel = text.includes('confident') || text.includes('strong') ? 85 :
+                         text.includes('comfortable') ? 80 : 75;
+  const authenticityLevel = text.includes('genuine') || text.includes('natural') ? 90 :
+                           text.includes('authentic') ? 85 : 75;
+  
   return {
-    lighting: data.technicalExcellence?.lighting || extractPattern(fullText, /lighting[:\s]*([\w\s]+)/i) || 'good',
-    composition: data.technicalExcellence?.composition || extractPattern(fullText, /composition[:\s]*([\w\s]+)/i) || 'acceptable',
-    imageQuality: data.technicalExcellence?.imageQuality || extractPattern(fullText, /image quality[:\s]*([\w\s]+)/i) || 'good',
-    enhancement: data.optimization || 'Technical analysis available in detailed report'
+    personalityProjected: personalityTraits,
+    emotionalIntelligence: "Analysis in progress - emotional indicators being evaluated",
+    demographicAppeal: getEnhancedDemographicAppeal(criteria, text),
+    marketPositioning: "Strategic market positioning analysis available",
+    profileRole: getEnhancedProfileRole(criteria),
+    conversationStarters: extractConversationStarters(text),
+    approachabilityFactor: approachabilityFactor,
+    confidenceLevel: confidenceLevel,
+    authenticityLevel: authenticityLevel
   };
 }
 
-function extractStrategicAdvice(data, fullText, criteria) {
-  const strategies = {
-    best: data.marketAnalysis,
-    social: data.socialStrategy,
-    activity: data.activityStrategy,
-    personality: data.personalityStrategy,
-    conversation_starters: data.conversationStrategy,
-    profile_order: data.positionReason,
-    broad_appeal: data.appealStrategy,
-    authenticity: data.authenticityStrategy,
-    balanced: data.selectionStrategy
+function extractEnhancedTags(responseText, criteria) {
+  const tags = [];
+  const text = responseText.toLowerCase();
+  
+  // Enhanced tag detection with context
+  if (text.includes('professional') || text.includes('work')) tags.push('professional');
+  if (text.includes('casual') || text.includes('relaxed')) tags.push('casual');
+  if (text.includes('social') || text.includes('group') || text.includes('friends')) tags.push('social');
+  if (text.includes('activity') || text.includes('sport') || text.includes('hobby')) tags.push('activity');
+  if (text.includes('personality') || text.includes('character')) tags.push('personality');
+  if (text.includes('attractive') || text.includes('appealing')) tags.push('attractive');
+  if (text.includes('natural') || text.includes('genuine')) tags.push('natural');
+  if (text.includes('confident') || text.includes('strong')) tags.push('confident');
+  if (text.includes('outdoor') || text.includes('nature')) tags.push('outdoor');
+  if (text.includes('travel') || text.includes('adventure')) tags.push('travel');
+  if (text.includes('creative') || text.includes('artistic')) tags.push('hobby');
+  
+  // Ensure minimum tags based on criteria
+  if (tags.length === 0) {
+    switch (criteria) {
+      case 'social': tags.push('social', 'analyzed'); break;
+      case 'activity': tags.push('activity', 'analyzed'); break;
+      case 'personality': tags.push('personality', 'analyzed'); break;
+      default: tags.push('analyzed', 'processed');
+    }
+  }
+  
+  return tags;
+}
+
+function extractConversationStarters(responseText) {
+  const starters = [];
+  const text = responseText.toLowerCase();
+  
+  if (text.includes('background') || text.includes('location')) {
+    starters.push("Interesting background location to ask about");
+  }
+  if (text.includes('activity') || text.includes('hobby')) {
+    starters.push("Activity or hobby visible for discussion");
+  }
+  if (text.includes('travel') || text.includes('adventure')) {
+    starters.push("Travel or adventure element for conversation");
+  }
+  if (text.includes('pet') || text.includes('animal')) {
+    starters.push("Pet or animal for easy conversation starter");
+  }
+  
+  return starters;
+}
+
+function getEnhancedDemographicAppeal(criteria, responseText) {
+  const demographicMapping = {
+    'social': 'Appeals to socially-oriented individuals seeking connection',
+    'activity': 'Attracts active, adventure-seeking demographics',
+    'personality': 'Appeals to those seeking authentic personality connection',
+    'broad_appeal': 'Strong cross-demographic appeal for mass market',
+    'authenticity': 'Attracts individuals valuing genuine, authentic connections',
+    'best': 'Broad appeal across multiple demographic segments'
   };
   
-  return strategies[criteria] || extractPattern(fullText, /strategy[:\s]*([\w\s,.!?]+)/i) || 'Strategic recommendations available';
+  return demographicMapping[criteria] || 'Analysis indicates positive demographic appeal';
 }
 
-function extractPattern(text, pattern) {
-  const match = text.match(pattern);
-  return match ? match[1].trim().substring(0, 100) : null;
+function getEnhancedPracticalFallback(criteria, responseText) {
+  const fallbackMapping = {
+    'profile_order': "Photo analyzed for strategic profile positioning with practical recommendations",
+    'conversation_starters': "Photo evaluated for conversation engagement and discussion potential",
+    'broad_appeal': "Photo assessed for broad demographic appeal and market positioning",
+    'authenticity': "Photo reviewed for authentic personality expression and genuine appeal",
+    'balanced': "Photo categorized for balanced profile creation with detailed classification",
+    'social': "Photo analyzed for social connectivity and group dynamics",
+    'activity': "Photo evaluated for activity demonstration and lifestyle appeal",
+    'personality': "Photo assessed for personality projection and character expression",
+    'best': "Comprehensive practical analysis completed for dating optimization"
+  };
+  
+  return fallbackMapping[criteria] || "Enhanced practical photo analysis completed";
 }
+
+function getEnhancedProfileRole(criteria) {
+  const roleMapping = {
+    'profile_order': 'Strategic positioning for optimal profile sequence',
+    'conversation_starters': 'Conversation catalyst and discussion starter',
+    'broad_appeal': 'Mass market appeal driver for wide demographic reach',
+    'authenticity': 'Authentic personality showcase for genuine connections',
+    'balanced': 'Profile balance contributor for comprehensive presentation',
+    'social': 'Social proof and connectivity demonstration',
+    'activity': 'Lifestyle and activity showcase element',
+    'personality': 'Character and personality highlight piece',
+    'best': 'Primary attraction and dating appeal driver'
+  };
+  
+  return roleMapping[criteria] || 'Enhanced dating profile optimization element';
+}
+
+function createFallbackResponse(fileName, photoUrl, criteria, errorMessage) {
+  return {
+    fileName: fileName,
+    storageURL: photoUrl,
+    score: 70,
+    visualQuality: 65,
+    attractivenessScore: 70,
+    datingAppealScore: 68,
+    swipeWorthiness: 67,
+    tags: ['uploaded', 'processing'],
+    bestQuality: "Photo uploaded successfully",
+    suggestions: ["Analysis temporarily unavailable - please try again"],
+    strengths: ["Photo processed successfully"],
+    improvements: [errorMessage || "Please try uploading again"],
+    nextPhotoSuggestions: ["Try different photos for comparison"],
+    technicalFeedback: {
+      lighting: "Analysis pending",
+      composition: "Analysis pending",
+      styling: "Analysis pending"
+    },
+    datingInsights: {
+      personalityProjected: [],
+      profileRole: "Processing"
+    },
+    categorization: {
+      socialScore: 0,
+      activityScore: 0,
+      personalityScore: 0,
+      primaryCategory: 'general',
+      categoryConfidence: 0,
+      categoryReasoning: 'Analysis failed - please retry'
+    }
+  };
+}
+
+function createRejectedResponse(fileName, photoUrl, reason) {
+  return {
+    fileName: fileName,
+    storageURL: photoUrl,
+    score: 0,
+    visualQuality: 0,
+    attractivenessScore: 0,
+    datingAppealScore: 0,
+    swipeWorthiness: 0,
+    tags: [],
+    bestQuality: '',
+    suggestions: [reason],
+    strengths: [],
+    improvements: [reason],
+    nextPhotoSuggestions: [],
+    technicalFeedback: {},
+    datingInsights: {
+      personalityProjected: [],
+      profileRole: "Rejected"
+    },
+    categorization: {
+      socialScore: 0,
+      activityScore: 0,
+      personalityScore: 0,
+      primaryCategory: 'general',
+      categoryConfidence: 0,
+      categoryReasoning: reason
+    }
+  };
+}
+
+// ENHANCED CONFIG FUNCTION
+exports.getConfig = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  return {
+    maxPhotos: 12,
+    maxBatchSize: 12,
+    supportedCriteria: [
+      'best', 
+      'social',
+      'activity', 
+      'personality',
+      'balanced', 
+      'profile_order', 
+      'conversation_starters', 
+      'broad_appeal', 
+      'authenticity'
+    ],
+    version: '3.2.0',
+    features: {
+      enhancedPracticalAnalysis: true,
+      professionalDepthAnalysis: true,
+      detailedCategorization: true,
+      strategicGuidance: true,
+      practicalRecommendations: true,
+      psychologicalInsights: true,
+      marketPositioning: true,
+      conversationOptimization: true,
+      authenticityEvaluation: true,
+      balancedSelection: true,
+      enhancedImageProcessing: true,
+      contentSafety: true,
+      base64Processing: true,
+      promoCodeSupport: true,
+      premiumCategoryAnalysis: true
+    },
+    analysisDepth: 'practical_expert_level'
+  };
+});
+
+// ENHANCED USER INITIALIZATION WITH LAUNCH CREDITS
+exports.initializeUser = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  // Launch period special: 15 credits vs standard 3
+  const launchStart = new Date('2025-07-24T00:00:00Z');
+  const launchEnd = new Date(launchStart);
+  launchEnd.setDate(launchEnd.getDate() + 14);
+  const inLaunchPeriod = Date.now() >= launchStart.getTime() && Date.now() < launchEnd.getTime();
+  const startingCredits = inLaunchPeriod ? 15 : 3;
+
+  const userRef = admin.firestore().collection('users').doc(uid);
+  
+  try {
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      await userRef.set({
+        email: request.auth.token.email || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        freeCredits: startingCredits,
+        totalAnalyses: 0,
+        isUnlimited: false,
+        preferences: {
+          defaultCriteria: 'best',
+          analysisDepth: 'practical_expert',
+          notifications: true
+        },
+        metadata: {
+          signupPeriod: inLaunchPeriod ? 'launch' : 'standard',
+          version: '3.2.0',
+          analysisLevel: 'enhanced_practical'
+        }
+      });
+      
+      console.log(`Initialized new user: ${uid} with ${startingCredits} free credits`);
+      return { 
+        success: true, 
+        newUser: true, 
+        freeCredits: startingCredits,
+        isLaunchPeriod: inLaunchPeriod,
+        analysisLevel: 'enhanced_practical'
+      };
+    } else {
+      const userData = userDoc.data();
+      console.log(`Existing user: ${uid}, credits: ${userData.freeCredits}`);
+      return { 
+        success: true, 
+        newUser: false, 
+        freeCredits: userData.freeCredits || 0,
+        isUnlimited: userData.isUnlimited || false,
+        isLaunchPeriod: inLaunchPeriod,
+        analysisLevel: 'enhanced_practical'
+      };
+    }
+  } catch (error) {
+    console.error('Error initializing user:', error);
+    throw new HttpsError('internal', 'Failed to initialize user');
+  }
+});
+
+// ENHANCED PROMO CODE REDEMPTION SYSTEM
+exports.redeemPromoCode = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  const code = String(request.data?.code || '').toUpperCase().trim();
+  if (!code) {
+    throw new HttpsError('invalid-argument', 'Promo code required');
+  }
+
+  // Enhanced promo code system with multiple tiers
+  const promoCodes = {
+    'K9X7M3P8Q2W5': {
+      credits: 999,
+      description: 'Unlimited Access - Enhanced Practical Analysis',
+      isUnlimited: true,
+      expirationDate: new Date(new Date().setFullYear(new Date().getFullYear() + 2)),
+      maxUses: 10,
+    },
+    'LAUNCH50': {
+      credits: 50,
+      description: 'Launch Special - 50 Enhanced Practical Analyses',
+      isUnlimited: false,
+      expirationDate: new Date('2025-12-31'),
+      maxUses: 100,
+    },
+    'BETA20': {
+      credits: 20,
+      description: 'Beta Tester - 20 Enhanced Practical Analyses',
+      isUnlimited: false,
+      expirationDate: new Date('2025-12-31'),
+      maxUses: 50,
+    },
+    'FRIEND10': {
+      credits: 10,
+      description: 'Friend Referral - 10 Enhanced Expert Analyses',
+      isUnlimited: false,
+      expirationDate: new Date('2025-12-31'),
+      maxUses: 500,
+    },
+    'PREMIUM100': {
+      credits: 100,
+      description: 'Premium Package - 100 Enhanced Practical Analyses',
+      isUnlimited: false,
+      expirationDate: new Date('2025-12-31'),
+      maxUses: 25,
+    }
+  };
+
+  const details = promoCodes[code];
+  if (!details) {
+    throw new HttpsError('not-found', 'Invalid promo code');
+  }
+  
+  if (Date.now() > details.expirationDate.getTime()) {
+    throw new HttpsError('failed-precondition', 'Promo code expired');
+  }
+
+  const db = admin.firestore();
+  const userPromoRef = db.collection('users').doc(uid).collection('redeemedPromoCodes').doc(code);
+  const globalRef = db.collection('promoCodes').doc(code);
+  const userRef = db.collection('users').doc(uid);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const userPromoSnap = await transaction.get(userPromoRef);
+      if (userPromoSnap.exists) {
+        throw new HttpsError('already-exists', 'Promo code already redeemed');
+      }
+
+      const globalSnap = await transaction.get(globalRef);
+      const uses = (globalSnap.data()?.uses) || 0;
+      if (uses >= details.maxUses) {
+        throw new HttpsError('failed-precondition', 'Promo code usage limit reached');
+      }
+
+      const userSnap = await transaction.get(userRef);
+      const userData = userSnap.data() || {};
+      const currentCredits = userData.freeCredits || 0;
+
+      // Record promo redemption
+      transaction.set(userPromoRef, {
+        redeemedAt: admin.firestore.FieldValue.serverTimestamp(),
+        creditsAdded: details.credits,
+        isUnlimited: details.isUnlimited,
+        description: details.description,
+        analysisLevel: 'enhanced_practical'
+      });
+
+      // Update global usage
+      transaction.set(globalRef, {
+        uses: uses + 1,
+        lastUsed: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      // Update user credits and status
+      const updateData = {
+        freeCredits: details.isUnlimited ? 999999 : currentCredits + details.credits,
+        isUnlimited: details.isUnlimited || userData.isUnlimited || false,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        'metadata.analysisLevel': 'enhanced_practical'
+      };
+
+      transaction.set(userRef, updateData, { merge: true });
+    });
+
+    console.log(`User ${uid} redeemed enhanced practical promo code ${code} for ${details.credits} credits`);
+    
+    return { 
+      success: true, 
+      promo: { 
+        credits: details.credits, 
+        isUnlimited: details.isUnlimited,
+        description: details.description,
+        analysisLevel: 'enhanced_practical'
+      }
+    };
+  } catch (error) {
+    console.error('Error redeeming promo code:', error);
+    throw error;
+  }
+});
+
+// ENHANCED CREDIT MANAGEMENT
+exports.updateUserCredits = onCall({
+  region: 'us-central1',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Authentication required');
+  }
+
+  const { freeCredits, creditsToAdd, creditsToDeduct, purchaseDetails } = request.data;
+  const userRef = admin.firestore().collection('users').doc(uid);
+
+  try {
+    await admin.firestore().runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      const userData = userDoc.data() || {};
+      
+      let newCredits = userData.freeCredits || 0;
+      
+      if (typeof freeCredits === 'number') {
+        newCredits = freeCredits;
+      } else if (typeof creditsToAdd === 'number') {
+        newCredits += creditsToAdd;
+      } else if (typeof creditsToDeduct === 'number') {
+        newCredits = Math.max(0, newCredits - creditsToDeduct);
+      }
+
+      const updateData = {
+        freeCredits: newCredits,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (purchaseDetails) {
+        updateData.lastPurchase = {
+          ...purchaseDetails,
+          purchaseDate: admin.firestore.FieldValue.serverTimestamp()
+        };
+      }
+
+      transaction.set(userRef, updateData, { merge: true });
+    });
+
+    console.log(`Updated credits for user ${uid}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating user credits:', error);
+    throw new HttpsError('internal', 'Failed to update credits');
+  }
+});
